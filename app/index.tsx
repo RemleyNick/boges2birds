@@ -1,9 +1,16 @@
+import { LilitaOne_400Regular, useFonts as useLilita } from "@expo-google-fonts/lilita-one";
+import { DancingScript_600SemiBold, useFonts as useDancing } from "@expo-google-fonts/dancing-script";
 import { useRouter } from "expo-router";
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
+
+  const [lilitaLoaded] = useLilita({ LilitaOne_400Regular });
+  const [dancingLoaded] = useDancing({ DancingScript_600SemiBold });
+
+  if (!lilitaLoaded || !dancingLoaded) return null;
 
   return (
     <ImageBackground
@@ -16,13 +23,14 @@ export default function WelcomeScreen() {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.inner}>
 
-          {/* Brand — sits in the upper third */}
+          {/* Brand */}
           <View style={styles.brandSection}>
-            <Text style={styles.preTitle}>Let's turn your</Text>
-            <Text style={styles.appName}>Boges2Birds</Text>
+            <Text style={styles.preTitle}>Turn your</Text>
+            <Text style={styles.appName}>Boges2Birds!</Text>
+            <Text style={styles.tagline}>Your personal path to breaking par.</Text>
           </View>
 
-          {/* Bottom — motivational copy + CTA */}
+          {/* CTA */}
           <View style={styles.bottomSection}>
             <TouchableOpacity
               onPress={() => router.push("/(onboarding)/program-select")}
@@ -60,23 +68,30 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   preTitle: {
-    fontSize: 20,
-    fontWeight: "400",
-    color: "rgba(255, 255, 255, 0.8)",
-    letterSpacing: 0.2,
+    fontFamily: "LilitaOne_400Regular",
+    fontSize: 28,
+    color: "rgba(255, 255, 255, 0.85)",
     marginBottom: 4,
   },
   appName: {
-    fontSize: 44,
-    fontWeight: "800",
+    fontFamily: "LilitaOne_400Regular",
+    fontSize: 52,
     color: "#FFFFFF",
-    letterSpacing: -1,
-    marginBottom: 8,
+    letterSpacing: 0.5,
+    marginBottom: 12,
   },
+  tagline: {
+    fontFamily: "DancingScript_600SemiBold",
+    fontSize: 22,
+    color: "rgba(255, 255, 255, 0.8)",
+    lineHeight: 30,
+  },
+
   // Bottom block
   bottomSection: {
     gap: 28,
   },
+
   // Frosted glass button
   ctaButton: {
     backgroundColor: "rgba(255, 255, 255, 0.18)",

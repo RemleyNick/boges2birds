@@ -1,0 +1,105 @@
+# Boges2Birds
+
+**Your personal golf training system.**
+
+A structured golf practice app for players working to Break 100, 90, or 80. Users enroll in a program, complete 4-week training blocks built around their weakest skills, log round stats, and get AI-formatted weekly practice plans.
+
+---
+
+## Features
+
+- **Break 100 / 90 / 80 programs** — structured 4-week training blocks tailored to your target score
+- **Skill priority engine** — analyzes round stats (fairways, GIR, putts, penalties) to rank what to work on most
+- **AI-formatted practice plans** — OpenAI generates friendly weekly summaries from the structured block data
+- **Round logging** — track scores, fairways hit, GIR, putts, and penalties over time
+- **Drill library** — curated practice drills mapped to skill areas and session types
+- **Offline-first** — everything works without a connection; syncs to the cloud in the background
+
+---
+
+## Tech Stack
+
+| | |
+|---|---|
+| Framework | Expo SDK 54 (managed workflow) |
+| Router | Expo Router v6 |
+| Styling | NativeWind v4 + Tailwind CSS v3 |
+| Local DB | expo-sqlite + Drizzle ORM |
+| Cloud | Supabase (Postgres + Auth + RLS) |
+| Subscriptions | RevenueCat |
+| LLM | OpenAI gpt-4o-mini |
+| Language | TypeScript |
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- [Expo Go](https://expo.dev/go) on your iOS or Android device (for development)
+
+### Install
+
+```bash
+git clone https://github.com/RemleyNick/boges2birds.git
+cd boges2birds
+npm install
+```
+
+### Run
+
+```bash
+npx expo start
+```
+
+Scan the QR code with your camera (iOS) or the Expo Go app (Android).
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in your keys:
+
+```bash
+cp .env.example .env
+```
+
+```
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+OPENAI_API_KEY=
+REVENUECAT_API_KEY_IOS=
+REVENUECAT_API_KEY_ANDROID=
+```
+
+---
+
+## Project Structure
+
+```
+app/                  Expo Router screens
+  (onboarding)/       Program select, assessment, generating
+  (tabs)/             Home, Practice, Log Round, Library, Profile
+src/
+  engine/             Pure TypeScript business logic (no React)
+  db/                 Drizzle schema + SQLite client + migrations
+  repositories/       CRUD layer per table
+  services/           LLM, sync, auth, subscriptions
+  hooks/              Data fetching + subscription gate
+  components/         UI primitives and screen components
+  constants/          Colors, program config
+```
+
+---
+
+## Roadmap
+
+- [x] Welcome Screen
+- [x] Project setup (Expo Router, NativeWind, TypeScript)
+- [ ] Supabase Auth + database schema
+- [ ] Onboarding flow (program select → assessment → block generation)
+- [ ] Home screen
+- [ ] Practice session flow
+- [ ] Round logging
+- [ ] Drill library
+- [ ] RevenueCat subscription + paywall
+- [ ] Offline sync
+- [ ] App Store release

@@ -1,91 +1,95 @@
 import { useRouter } from "expo-router";
-import { SafeAreaView, Text, TouchableOpacity, View } from "react-native";
-
-import { colors } from "@/constants/colors";
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, paddingHorizontal: 24, paddingBottom: 32 }}>
-        {/* Top section: icon + brand */}
-        <View
-          style={{
-            flex: 0.55,
-            alignItems: "center",
-            justifyContent: "flex-end",
-            paddingBottom: 24,
-          }}
-        >
-          <Text style={{ fontSize: 72, marginBottom: 8 }}>🏌️</Text>
-          <Text
-            style={{
-              fontSize: 36,
-              fontWeight: "bold",
-              color: colors.text,
-              letterSpacing: -0.5,
-              marginBottom: 8,
-            }}
-          >
-            Boges2Birds
-          </Text>
-          <Text
-            style={{
-              fontSize: 16,
-              color: colors.textMuted,
-              textAlign: "center",
-            }}
-          >
-            Your personal golf training system.
-          </Text>
-        </View>
+    <ImageBackground
+      source={require("../assets/images/bg-welcome.jpg")}
+      style={styles.root}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay} />
 
-        {/* Bottom section: CTA + subtext */}
-        <View style={{ flex: 0.45, justifyContent: "flex-end" }}>
-          <TouchableOpacity
-            onPress={() => router.push("/(onboarding)/program-select")}
-            style={{
-              backgroundColor: colors.accent,
-              borderRadius: 12,
-              paddingVertical: 16,
-              alignItems: "center",
-              marginBottom: 24,
-            }}
-            activeOpacity={0.85}
-          >
-            <Text
-              style={{
-                color: "#FFFFFF",
-                fontSize: 17,
-                fontWeight: "600",
-              }}
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.inner}>
+
+          {/* Brand — sits in the upper third */}
+          <View style={styles.brandSection}>
+            <Text style={styles.preTitle}>Let's turn your</Text>
+            <Text style={styles.appName}>Boges2Birds</Text>
+          </View>
+
+          {/* Bottom — motivational copy + CTA */}
+          <View style={styles.bottomSection}>
+            <TouchableOpacity
+              onPress={() => router.push("/(onboarding)/program-select")}
+              style={styles.ctaButton}
+              activeOpacity={0.7}
             >
-              Get Started
-            </Text>
-          </TouchableOpacity>
+              <Text style={styles.ctaText}>Get Started</Text>
+            </TouchableOpacity>
+          </View>
 
-          <View
-            style={{
-              height: 1,
-              backgroundColor: "#E5E5E5",
-              marginBottom: 20,
-            }}
-          />
-
-          <Text
-            style={{
-              fontSize: 13,
-              color: colors.textSubtle,
-              textAlign: "center",
-              fontStyle: "italic",
-              lineHeight: 20,
-            }}
-          >
-            {"Break 100. Break 90.\nBreak 80. We'll get you there."}
-          </Text>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.42)",
+  },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 48,
+    paddingBottom: 40,
+    justifyContent: "space-between",
+  },
+
+  // Brand
+  brandSection: {
+    alignItems: "flex-start",
+  },
+  preTitle: {
+    fontSize: 20,
+    fontWeight: "400",
+    color: "rgba(255, 255, 255, 0.8)",
+    letterSpacing: 0.2,
+    marginBottom: 4,
+  },
+  appName: {
+    fontSize: 44,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: -1,
+    marginBottom: 8,
+  },
+  // Bottom block
+  bottomSection: {
+    gap: 28,
+  },
+  // Frosted glass button
+  ctaButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.55)",
+    borderRadius: 14,
+    paddingVertical: 18,
+    alignItems: "center",
+  },
+  ctaText: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "600",
+    letterSpacing: 0.4,
+  },
+});

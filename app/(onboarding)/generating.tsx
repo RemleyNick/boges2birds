@@ -6,7 +6,19 @@ import { useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
 
+import { db } from '@/db/client'
+import { trainingBlocks } from '@/db/schema'
 import { colors } from '@/constants/colors'
+import { DRILL_SEEDS } from '@/engine/drillSeeds'
+import { generateBlockStructure, enrichWithLLMSummary } from '@/engine/blockGenerator'
+import { computeSkillPriorities } from '@/engine/skillPriorityEngine'
+import { saveSkillAssessment } from '@/repositories/skillAssessmentsRepo'
+import { enrollInProgram } from '@/repositories/userProgramsRepo'
+import { saveTrainingBlock } from '@/repositories/trainingBlocksRepo'
+import { useOnboardingStore } from '@/store/onboardingStore'
+import { useUserStore } from '@/store/userStore'
+import type { SkillRatings } from '@/types'
+import { eq } from 'drizzle-orm'
 
 export default function GeneratingScreen() {
   const router = useRouter()
@@ -30,13 +42,38 @@ export default function GeneratingScreen() {
     pulse(dot1, 0)
     pulse(dot2, 200)
     pulse(dot3, 400)
+  }, [dot1, dot2, dot3])
 
-    const timer = setTimeout(() => {
-      router.replace('/(tabs)')
-    }, 2500)
+  useEffect(() => {
+    const minDelay = new Promise<void>((r) => setTimeout(r, 1500))
 
-    return () => clearTimeout(timer)
-  }, [dot1, dot2, dot3, router])
+    async function run() {
+      const { program, skillRatings, weeklyTime } = useOnboardingStore.getState()
+      const userId = useUserStore.getState().userId!
+
+      const priorities = computeSkillPriorities([], skillRatings as SkillRatings, program!)
+      const block = generateBlockStructure(priorities, weeklyTime!, program!, 1, DRILL_SEEDS)
+
+      await saveSkillAssessment(userId, skillRatings as SkillRatings, weeklyTime!)
+      await enrollInProgram(userId, program!)
+      const blockId = await saveTrainingBlock(userId, block)
+
+      // Fire-and-forget LLM enrichment
+      enrichWithLLMSummary(block)
+        .then((summary) =>
+          db.update(trainingBlocks)
+            .set({ llmSummary: summary, updatedAt: new Date() })
+            .where(eq(trainingBlocks.id, blockId))
+        )
+        .catch(() => {}) // silent fail; template summary is already saved
+
+      useOnboardingStore.getState().reset()
+    }
+
+    Promise.all([run(), minDelay])
+      .catch((e) => console.error('[generating] Setup error:', e))
+      .finally(() => router.replace('/(tabs)'))
+  }, [router])
 
   if (!lilitaLoaded) return null
 

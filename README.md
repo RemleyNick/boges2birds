@@ -92,14 +92,18 @@ src/
 
 ## Roadmap
 
-- [x] Welcome Screen
 - [x] Project setup (Expo Router, NativeWind, TypeScript)
-- [ ] Supabase Auth + database schema
-- [ ] Onboarding flow (program select → assessment → block generation)
-- [ ] Home screen
-- [ ] Practice session flow
-- [ ] Round logging
-- [ ] Drill library
+- [x] Welcome screen
+- [x] Skill priority engine + drill selector + block generator
+- [x] Drizzle schema + SQLite migrations + seed data
+- [x] Onboarding flow (program select → assessment → block generation)
+- [x] Home screen (training block overview, session cards)
+- [x] Practice session flow (drill checklist, session completion)
+- [x] Round logging (form with input validation)
+- [x] Drill library (skill-area filters, expandable cards)
+- [x] Profile (identity, program, skill ratings, weekly time, round stats)
+- [ ] Auth (sign-up/sign-in, guest migration)
 - [ ] RevenueCat subscription + paywall
-- [ ] Offline sync
+- [ ] Offline sync validation
+- [ ] UI/styling polish
 - [ ] App Store release

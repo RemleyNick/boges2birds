@@ -9,3 +9,50 @@ export interface SkillRatings {
   putting: number
   courseMgmt: number
 }
+
+// --- Engine types ---
+
+export interface RoundStats {
+  fairwaysHit: number
+  fairwaysTotal: number
+  girHit: number
+  girTotal: number
+  totalPutts: number
+  holesPlayed: number
+  penalties: number
+}
+
+export type SkillScore = Record<SkillArea, number>   // 1–4 scale
+
+export interface SkillPriority {
+  skill: SkillArea
+  score: number   // higher = needs more work
+}
+
+export type SessionType = 'driving' | 'irons' | 'short_game' | 'putting' | 'mixed'
+
+export interface Session {
+  weekNumber: 1 | 2 | 3 | 4
+  sessionNumber: number
+  sessionType: SessionType
+  primarySkill: SkillArea
+  durationMinutes: number
+  drillIds: string[]
+}
+
+export interface TrainingBlock {
+  blockNumber: number
+  skillPriorities: SkillPriority[]
+  sessions: Session[]
+  llmSummary: string | null
+}
+
+export interface Drill {
+  id: string
+  name: string
+  skillArea: SkillArea
+  sessionType: SessionType
+  durationMinutes: number
+  programSlugs: ProgramSlug[]
+  instructions: string
+}

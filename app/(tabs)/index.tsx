@@ -1,4 +1,5 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useRouter } from 'expo-router'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { colors } from '@/constants/colors'
@@ -22,6 +23,7 @@ const WEEK_THEMES: Record<number, string> = {
 }
 
 export default function HomeScreen() {
+  const router = useRouter()
   const userId = useUserStore((s) => s.userId)
   const { data: blockData, isLoading } = useActiveTrainingBlock(userId)
 
@@ -52,14 +54,29 @@ export default function HomeScreen() {
         <Text style={styles.heading}>
           Week {currentWeek} — {WEEK_THEMES[currentWeek]}
         </Text>
-        {weekSessions.map((session) => (
-          <View key={session.id} style={styles.card}>
-            <Text style={styles.skill}>
-              {SKILL_LABELS[session.primarySkill as SkillArea]}
-            </Text>
-            <Text style={styles.meta}>{session.durationMinutes} min</Text>
-          </View>
-        ))}
+        {weekSessions.map((session) => {
+          const isDone = session.status === 'complete'
+          return (
+            <TouchableOpacity
+              key={session.id}
+              style={[styles.card, isDone && styles.cardDone]}
+              onPress={() => router.push(`/practice/${session.id}`)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardContent}>
+                <Text style={styles.skill}>
+                  {SKILL_LABELS[session.primarySkill as SkillArea]}
+                </Text>
+                <Text style={styles.meta}>{session.durationMinutes} min</Text>
+              </View>
+              {isDone && (
+                <View style={styles.doneBadge}>
+                  <Text style={styles.doneBadgeText}>Done</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
+        })}
       </ScrollView>
     </SafeAreaView>
   )
@@ -100,6 +117,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  cardDone: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.accent,
+  },
+  cardContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   skill: {
     fontSize: 16,
     fontWeight: '600',
@@ -108,5 +135,17 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 14,
     color: colors.textMuted,
+  },
+  doneBadge: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginLeft: 12,
+  },
+  doneBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 })

@@ -86,17 +86,29 @@ if [ -z "$REVIEW" ]; then
         fi
     done <<< "$COMMITS"
 
-    # Check diff for debug code and common issues
-    DIFF=$(git diff "${UPSTREAM}..HEAD" 2>/dev/null || echo "")
-    if echo "$DIFF" | grep -qE '^\+.*(console\.log|debugger)'; then
-        ISSUES="${ISSUES}  ⚠️  Debug code detected (console.log or debugger)\n"
+    # Scope debug/TODO checks to TS/JS source files only — avoids self-matching
+    # when the hook script itself is in the diff
+    TS_DIFF=$(git diff "${UPSTREAM}..HEAD" -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null || echo "")
+
+    # Require call syntax to avoid matching strings/comments that mention console.log
+    if echo "$TS_DIFF" | grep -qE '^\+[^+].*console\.(log|warn|error|debug)\s*\('; then
+        ISSUES="${ISSUES}  ⚠️  Debug code detected (console.log/warn/error/debug)\n"
     fi
-    if echo "$DIFF" | grep -qE '^\+.*(TODO|FIXME)'; then
-        ISSUES="${ISSUES}  ⚠️  TODO/FIXME markers in new code\n"
+    if echo "$TS_DIFF" | grep -qE '^\+[^+].*\bdebugger\b'; then
+        ISSUES="${ISSUES}  ⚠️  debugger statement left in\n"
     fi
-    # Rough secret pattern check (not exhaustive)
-    if echo "$DIFF" | grep -qE '^\+.*(sk-[A-Za-z0-9]{20,}|PRIVATE_KEY|api_secret\s*=)'; then
+    # Only flag TODO/FIXME inside comment markers (// or /*)
+    if echo "$TS_DIFF" | grep -qE '^\+[^+].*(\/\/|\/\*).*\b(TODO|FIXME)\b'; then
+        ISSUES="${ISSUES}  ⚠️  TODO/FIXME in new comments\n"
+    fi
+    # Secrets: require assignment to a string literal — not just an env var reference
+    FULL_DIFF=$(git diff "${UPSTREAM}..HEAD" 2>/dev/null || echo "")
+    if echo "$FULL_DIFF" | grep -qE '^\+[^+].*(SECRET|API_KEY|PRIVATE_KEY|PASSWORD)\s*=\s*["`'"'"'][^"`'"'"']{8,}["`'"'"']'; then
         ISSUES="${ISSUES}  ⚠️  Possible hardcoded secret or API key\n"
+    fi
+    # OpenAI / Anthropic key prefix pattern (actual key values, not variable names)
+    if echo "$FULL_DIFF" | grep -qE '^\+[^+].*(sk-[A-Za-z0-9]{40,}|sk-ant-[A-Za-z0-9]{20,})'; then
+        ISSUES="${ISSUES}  ⚠️  Possible hardcoded API key (sk- prefix detected)\n"
     fi
 
     if [ -z "$ISSUES" ]; then

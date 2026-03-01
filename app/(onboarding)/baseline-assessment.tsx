@@ -6,13 +6,18 @@ import {
   LilitaOne_400Regular,
   useFonts as useLilita,
 } from '@expo-google-fonts/lilita-one'
-import { useRouter } from 'expo-router'
+import { useEffect } from 'react'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { colors } from '@/constants/colors'
 import { useOnboardingStore } from '@/store/onboardingStore'
-import { SkillArea, WeeklyTime } from '@/types'
+import { useUserStore } from '@/store/userStore'
+import { saveSkillAssessment } from '@/repositories/skillAssessmentsRepo'
+import { useLatestAssessment } from '@/hooks/useProfile'
+import { SkillArea, SkillRatings, WeeklyTime } from '@/types'
 
 const SKILLS: { key: SkillArea; label: string }[] = [
   { key: 'teeShot',   label: 'Tee Shots' },
@@ -34,7 +39,23 @@ const RATINGS = [1, 2, 3, 4, 5]
 
 export default function BaselineAssessmentScreen() {
   const router = useRouter()
+  const { context } = useLocalSearchParams<{ context?: string }>()
+  const isReassess = context === 'reassess'
   const { skillRatings, weeklyTime, setSkillRating, setWeeklyTime } = useOnboardingStore()
+  const userId = useUserStore((s) => s.userId)
+  const queryClient = useQueryClient()
+  const { data: latestAssessment } = useLatestAssessment(isReassess ? userId : null)
+
+  // Pre-populate onboarding store with existing assessment values when reassessing
+  useEffect(() => {
+    if (!isReassess || !latestAssessment) return
+    if (latestAssessment.teeShotRating != null) setSkillRating('teeShot', latestAssessment.teeShotRating)
+    if (latestAssessment.ironRating != null) setSkillRating('irons', latestAssessment.ironRating)
+    if (latestAssessment.shortGameRating != null) setSkillRating('shortGame', latestAssessment.shortGameRating)
+    if (latestAssessment.puttingRating != null) setSkillRating('putting', latestAssessment.puttingRating)
+    if (latestAssessment.courseMgmtRating != null) setSkillRating('courseMgmt', latestAssessment.courseMgmtRating)
+    if (latestAssessment.weeklyTimeAvailable) setWeeklyTime(latestAssessment.weeklyTimeAvailable as WeeklyTime)
+  }, [isReassess, latestAssessment])
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
   const [dancingLoaded] = useDancing({ DancingScript_600SemiBold })
@@ -56,9 +77,13 @@ export default function BaselineAssessmentScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Rate your game</Text>
+        <Text style={styles.title}>
+          {isReassess ? 'Re-assess your game' : 'Rate your game'}
+        </Text>
         <Text style={styles.subtitle}>
-          Be honest — this builds your first training block.
+          {isReassess
+            ? 'Update your ratings to refine future training blocks.'
+            : 'Be honest — this builds your first training block.'}
         </Text>
 
         <View style={styles.section}>
@@ -113,11 +138,21 @@ export default function BaselineAssessmentScreen() {
 
         <TouchableOpacity
           style={[styles.buildButton, !canProceed && styles.buildButtonDisabled]}
-          onPress={() => router.push('/(onboarding)/generating')}
+          onPress={async () => {
+            if (isReassess && userId && weeklyTime) {
+              await saveSkillAssessment(userId, skillRatings as SkillRatings, weeklyTime)
+              queryClient.invalidateQueries({ queryKey: ['latest-assessment'] })
+              router.back()
+            } else {
+              router.push('/(onboarding)/generating')
+            }
+          }}
           disabled={!canProceed}
           activeOpacity={0.8}
         >
-          <Text style={styles.buildButtonText}>Build My Plan</Text>
+          <Text style={styles.buildButtonText}>
+            {isReassess ? 'Save Ratings' : 'Build My Plan'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

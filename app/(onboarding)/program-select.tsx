@@ -2,26 +2,42 @@ import {
   LilitaOne_400Regular,
   useFonts as useLilita,
 } from '@expo-google-fonts/lilita-one'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { colors } from '@/constants/colors'
 import { PROGRAMS } from '@/constants/programs'
 import { useOnboardingStore } from '@/store/onboardingStore'
+import { useUserStore } from '@/store/userStore'
+import { enrollInProgram } from '@/repositories/userProgramsRepo'
 import { ProgramSlug } from '@/types'
 
 export default function ProgramSelectScreen() {
   const router = useRouter()
+  const { context } = useLocalSearchParams<{ context?: string }>()
+  const isChange = context === 'change'
   const { program, setProgram } = useOnboardingStore()
+  const userId = useUserStore((s) => s.userId)
+  const queryClient = useQueryClient()
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
   if (!lilitaLoaded) return null
 
   return (
     <SafeAreaView style={styles.root}>
+      {isChange && (
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
+            <Text style={styles.backChevron}>‹</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.inner}>
-        <Text style={styles.title}>Choose your program</Text>
+        <Text style={styles.title}>
+          {isChange ? 'Change program' : 'Choose your program'}
+        </Text>
 
         <View style={styles.cards}>
           {PROGRAMS.map((p) => {
@@ -42,11 +58,21 @@ export default function ProgramSelectScreen() {
 
         <TouchableOpacity
           style={[styles.nextButton, !program && styles.nextButtonDisabled]}
-          onPress={() => router.push('/(onboarding)/baseline-assessment')}
+          onPress={async () => {
+            if (isChange && program && userId) {
+              await enrollInProgram(userId, program)
+              queryClient.invalidateQueries({ queryKey: ['active-program'] })
+              router.back()
+            } else {
+              router.push('/(onboarding)/baseline-assessment')
+            }
+          }}
           disabled={!program}
           activeOpacity={0.8}
         >
-          <Text style={styles.nextButtonText}>Next</Text>
+          <Text style={styles.nextButtonText}>
+            {isChange ? 'Save' : 'Next'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -57,6 +83,19 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+  },
+  backChevron: {
+    fontSize: 36,
+    color: colors.text,
+    lineHeight: 40,
   },
   inner: {
     flex: 1,

@@ -2,10 +2,10 @@ import type { SkillPriority } from '@/types'
 import { DRILL_SEEDS } from '../drillSeeds'
 import {
   buildTemplateSummary,
+  distributeTime,
   generateBlockStructure,
-  sessionsPerWeek,
 } from '../blockGenerator'
-import { SESSIONS_PER_WEEK, WEEK_VOLUME } from '../thresholds'
+import { MIN_SESSION_DURATION, WEEKLY_TIME_BUDGET, WEEK_VOLUME } from '../thresholds'
 
 const MOCK_PRIORITIES: SkillPriority[] = [
   { skill: 'putting',    score: 4.0 },
@@ -15,29 +15,77 @@ const MOCK_PRIORITIES: SkillPriority[] = [
   { skill: 'courseMgmt', score: 1.5 },
 ]
 
-describe('sessionsPerWeek', () => {
-  it('returns 1 for <60', () => expect(sessionsPerWeek('<60')).toBe(1))
-  it('returns 2 for 60-90', () => expect(sessionsPerWeek('60-90')).toBe(2))
-  it('returns 3 for 90-150', () => expect(sessionsPerWeek('90-150')).toBe(3))
-  it('returns 4 for 150-240', () => expect(sessionsPerWeek('150-240')).toBe(4))
-  it('returns 5 for 240+', () => expect(sessionsPerWeek('240+')).toBe(5))
+const EQUAL_PRIORITIES: SkillPriority[] = [
+  { skill: 'putting',    score: 3.0 },
+  { skill: 'shortGame',  score: 3.0 },
+  { skill: 'teeShot',    score: 3.0 },
+  { skill: 'irons',      score: 3.0 },
+  { skill: 'courseMgmt', score: 3.0 },
+]
+
+describe('distributeTime', () => {
+  it('returns 5 durations matching priority count', () => {
+    const durations = distributeTime(MOCK_PRIORITIES, 120)
+    expect(durations).toHaveLength(5)
+  })
+
+  it('durations sum to total minutes', () => {
+    const total = 120
+    const durations = distributeTime(MOCK_PRIORITIES, total)
+    expect(durations.reduce((a, b) => a + b, 0)).toBe(total)
+  })
+
+  it('every duration >= MIN_SESSION_DURATION when budget allows', () => {
+    const durations = distributeTime(MOCK_PRIORITIES, 120)
+    for (const d of durations) {
+      expect(d).toBeGreaterThanOrEqual(MIN_SESSION_DURATION)
+    }
+  })
+
+  it('higher score gets more time', () => {
+    const durations = distributeTime(MOCK_PRIORITIES, 120)
+    // putting (score 4.0) should get more than courseMgmt (score 1.5)
+    expect(durations[0]).toBeGreaterThan(durations[4])
+  })
+
+  it('equal scores produce equal durations', () => {
+    const durations = distributeTime(EQUAL_PRIORITIES, 100)
+    const unique = new Set(durations)
+    expect(unique.size).toBe(1)
+    expect(durations[0]).toBe(20)
+  })
+
+  it('handles very small budget gracefully', () => {
+    const durations = distributeTime(MOCK_PRIORITIES, 30)
+    expect(durations.reduce((a, b) => a + b, 0)).toBe(30)
+    for (const d of durations) {
+      expect(d).toBeGreaterThan(0)
+    }
+  })
 })
 
 describe('generateBlockStructure', () => {
-  it('always generates exactly 4 weeks of sessions', () => {
+  it('always generates exactly 20 sessions (5 skills × 4 weeks)', () => {
     const block = generateBlockStructure(MOCK_PRIORITIES, '60-90', 'break100', 1, DRILL_SEEDS)
-    const weeks = new Set(block.sessions.map((s) => s.weekNumber))
-    expect(weeks.size).toBe(4)
-    expect([...weeks].sort()).toEqual([1, 2, 3, 4])
+    expect(block.sessions).toHaveLength(20)
   })
 
-  it('produces correct session count for 60-90 (2 sessions/week)', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, '60-90', 'break100', 1, DRILL_SEEDS)
-    // 2 sessions/week × volume: [0.6→1, 0.8→2, 1.0→2, 0.7→1] = 1+2+2+1 = 6
-    const week1Count = block.sessions.filter((s) => s.weekNumber === 1).length
-    const week3Count = block.sessions.filter((s) => s.weekNumber === 3).length
-    expect(week1Count).toBeGreaterThanOrEqual(1)
-    expect(week3Count).toBeGreaterThanOrEqual(1)
+  it('every week has exactly 5 sessions', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, '90-150', 'break100', 1, DRILL_SEEDS)
+    for (const wk of [1, 2, 3, 4]) {
+      const weekSessions = block.sessions.filter((s) => s.weekNumber === wk)
+      expect(weekSessions.length).toBe(5)
+    }
+  })
+
+  it('every week covers all 5 skill areas', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, '<60', 'break100', 1, DRILL_SEEDS)
+    for (const wk of [1, 2, 3, 4]) {
+      const skills = new Set(
+        block.sessions.filter((s) => s.weekNumber === wk).map((s) => s.primarySkill),
+      )
+      expect(skills.size).toBe(5)
+    }
   })
 
   it('sets the correct blockNumber', () => {
@@ -71,13 +119,6 @@ describe('generateBlockStructure', () => {
     }
   })
 
-  it('week 3 has more or equal sessions than week 1 (peak vs foundation)', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, '90-150', 'break90', 1, DRILL_SEEDS)
-    const week1 = block.sessions.filter((s) => s.weekNumber === 1).length
-    const week3 = block.sessions.filter((s) => s.weekNumber === 3).length
-    expect(week3).toBeGreaterThanOrEqual(week1)
-  })
-
   it('each session has a primarySkill matching a known skill area', () => {
     const validSkills = ['teeShot', 'irons', 'shortGame', 'putting', 'courseMgmt']
     const block = generateBlockStructure(MOCK_PRIORITIES, '60-90', 'break100', 1, DRILL_SEEDS)
@@ -87,9 +128,43 @@ describe('generateBlockStructure', () => {
   })
 
   it('each session has a positive durationMinutes', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, '60-90', 'break100', 1, DRILL_SEEDS)
+    const block = generateBlockStructure(MOCK_PRIORITIES, '<60', 'break100', 1, DRILL_SEEDS)
     for (const s of block.sessions) {
       expect(s.durationMinutes).toBeGreaterThan(0)
+    }
+  })
+
+  it('week 3 (peak) has more total time than week 1 (foundation)', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, '90-150', 'break90', 1, DRILL_SEEDS)
+    const week1Time = block.sessions
+      .filter((s) => s.weekNumber === 1)
+      .reduce((sum, s) => sum + s.durationMinutes, 0)
+    const week3Time = block.sessions
+      .filter((s) => s.weekNumber === 3)
+      .reduce((sum, s) => sum + s.durationMinutes, 0)
+    expect(week3Time).toBeGreaterThan(week1Time)
+  })
+
+  it('highest-priority skill gets the most time each week', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, '240+', 'break100', 1, DRILL_SEEDS)
+    for (const wk of [1, 2, 3, 4]) {
+      const weekSessions = block.sessions.filter((s) => s.weekNumber === wk)
+      const puttingSession = weekSessions.find((s) => s.primarySkill === 'putting')!
+      for (const s of weekSessions) {
+        expect(puttingSession.durationMinutes).toBeGreaterThanOrEqual(s.durationMinutes)
+      }
+    }
+  })
+
+  it('equal priorities produce nearly equal durations within each week (±1 min rounding)', () => {
+    const block = generateBlockStructure(EQUAL_PRIORITIES, '90-150', 'break100', 1, DRILL_SEEDS)
+    for (const wk of [1, 2, 3, 4]) {
+      const durations = block.sessions
+        .filter((s) => s.weekNumber === wk)
+        .map((s) => s.durationMinutes)
+      const min = Math.min(...durations)
+      const max = Math.max(...durations)
+      expect(max - min).toBeLessThanOrEqual(1)
     }
   })
 })

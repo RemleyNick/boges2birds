@@ -1,11 +1,11 @@
 import {
   FAIRWAY_THRESHOLDS,
   GIR_THRESHOLDS,
+  MIN_SESSION_DURATION,
   PENALTY_THRESHOLDS_DESC,
   PROGRAM_MULTIPLIERS,
   PUTTS_THRESHOLDS_DESC,
-  SESSION_DURATION,
-  SESSIONS_PER_WEEK,
+  WEEKLY_TIME_BUDGET,
   WEEK_VOLUME,
 } from '../thresholds'
 
@@ -87,10 +87,14 @@ describe('PROGRAM_MULTIPLIERS', () => {
   })
 })
 
-describe('SESSIONS_PER_WEEK', () => {
-  it('returns 1 for <60', () => expect(SESSIONS_PER_WEEK['<60']).toBe(1))
-  it('returns 2 for 60-90', () => expect(SESSIONS_PER_WEEK['60-90']).toBe(2))
-  it('returns 5 for 240+', () => expect(SESSIONS_PER_WEEK['240+']).toBe(5))
+describe('WEEKLY_TIME_BUDGET', () => {
+  it('all time buckets have a positive budget', () => {
+    for (const v of Object.values(WEEKLY_TIME_BUDGET)) {
+      expect(v).toBeGreaterThan(0)
+    }
+  })
+  it('<60 is 45 min', () => expect(WEEKLY_TIME_BUDGET['<60']).toBe(45))
+  it('240+ is 300 min', () => expect(WEEKLY_TIME_BUDGET['240+']).toBe(300))
 })
 
 describe('WEEK_VOLUME', () => {
@@ -99,10 +103,6 @@ describe('WEEK_VOLUME', () => {
   it('week 4 is 0.7', () => expect(WEEK_VOLUME[4]).toBe(0.7))
 })
 
-describe('SESSION_DURATION', () => {
-  it('all time buckets have a positive duration', () => {
-    for (const v of Object.values(SESSION_DURATION)) {
-      expect(v).toBeGreaterThan(0)
-    }
-  })
+describe('MIN_SESSION_DURATION', () => {
+  it('is 10 minutes', () => expect(MIN_SESSION_DURATION).toBe(10))
 })

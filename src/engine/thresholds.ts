@@ -73,14 +73,15 @@ export const PROGRAM_MULTIPLIERS: Record<ProgramSlug, Record<SkillArea, number>>
   },
 }
 
-// ─── Sessions per week ────────────────────────────────────────────────────────
+// ─── Weekly time budget ─────────────────────────────────────────────────────
+// Midpoint minutes for each weekly time bucket.
 
-export const SESSIONS_PER_WEEK: Record<WeeklyTime, number> = {
-  '<60':     1,
-  '60-90':   2,
-  '90-150':  3,
-  '150-240': 4,
-  '240+':    5,
+export const WEEKLY_TIME_BUDGET: Record<WeeklyTime, number> = {
+  '<60':     45,
+  '60-90':   75,
+  '90-150':  120,
+  '150-240': 195,
+  '240+':    300,
 }
 
 // ─── Week volume multipliers ──────────────────────────────────────────────────
@@ -93,13 +94,6 @@ export const WEEK_VOLUME: Record<1 | 2 | 3 | 4, number> = {
   4: 0.7,
 }
 
-// ─── Session duration targets ─────────────────────────────────────────────────
-// Base duration per session given the weekly time bucket.
+// ─── Session duration constraints ─────────────────────────────────────────────
 
-export const SESSION_DURATION: Record<WeeklyTime, number> = {
-  '<60':     45,
-  '60-90':   40,
-  '90-150':  35,
-  '150-240': 35,
-  '240+':    30,
-}
+export const MIN_SESSION_DURATION = 10  // minutes — floor per skill session

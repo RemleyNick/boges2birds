@@ -1,13 +1,8 @@
 import type { Drill, ProgramSlug, Session, SessionType, SkillArea, SkillPriority, TrainingBlock, WeeklyTime } from '@/types'
-import { SESSION_DURATION, SESSIONS_PER_WEEK, WEEK_VOLUME } from './thresholds'
+import { MIN_SESSION_DURATION, WEEKLY_TIME_BUDGET, WEEK_VOLUME } from './thresholds'
 import { selectDrills } from './drillSelector'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Return number of sessions per week for the given time bucket. */
-export function sessionsPerWeek(weeklyTime: WeeklyTime): number {
-  return SESSIONS_PER_WEEK[weeklyTime]
-}
 
 /** Map a SkillArea to its matching SessionType. */
 function skillToSessionType(skill: SkillArea): SessionType {
@@ -21,48 +16,52 @@ function skillToSessionType(skill: SkillArea): SessionType {
 }
 
 /**
- * Decide which skill to focus on for a given session slot within a week.
- * Week 1: cycle through all skills (foundation)
- * Week 2: favour top 2 skills
- * Week 3: favour top 1 skill
- * Week 4: cycle through (consolidation)
+ * Distribute `totalMinutes` across all 5 skills proportional to priority score.
+ * Higher score = more time. Each skill gets at least MIN_SESSION_DURATION.
+ * Returns durations in priority order (same order as `priorities`).
  */
-function pickSkillForSlot(
+export function distributeTime(
   priorities: SkillPriority[],
-  weekNumber: 1 | 2 | 3 | 4,
-  slotIndex: number,
-  totalSlots: number,
-): SkillArea {
-  const top = priorities[0]?.skill ?? 'putting'
-  const second = priorities[1]?.skill ?? 'shortGame'
+  totalMinutes: number,
+): number[] {
+  const count = priorities.length
+  const minTotal = count * MIN_SESSION_DURATION
 
-  switch (weekNumber) {
-    case 1:
-    case 4:
-      // Cycle through all 5 skills evenly
-      return priorities[slotIndex % priorities.length]?.skill ?? top
-
-    case 2:
-      // First half of sessions → top 2, remainder cycle
-      if (slotIndex < Math.ceil(totalSlots * 0.6)) {
-        return slotIndex % 2 === 0 ? top : second
-      }
-      return priorities[slotIndex % priorities.length]?.skill ?? top
-
-    case 3:
-      // >50% of sessions on top skill
-      if (slotIndex < Math.ceil(totalSlots * 0.6)) {
-        return top
-      }
-      return second
+  // If budget can't cover minimums, give each skill an equal share
+  if (totalMinutes <= minTotal) {
+    const each = Math.round(totalMinutes / count)
+    return priorities.map(() => each)
   }
+
+  // Reserve minimums, then distribute the remainder by score weight
+  const remainder = totalMinutes - minTotal
+  const totalScore = priorities.reduce((sum, p) => sum + p.score, 0)
+
+  const raw = priorities.map(
+    (p) => MIN_SESSION_DURATION + (p.score / totalScore) * remainder,
+  )
+
+  // Round to whole minutes, then adjust for rounding drift
+  const rounded = raw.map((r) => Math.round(r))
+  let drift = totalMinutes - rounded.reduce((a, b) => a + b, 0)
+
+  // Fix drift by adjusting the highest-score skill first
+  for (let i = 0; drift !== 0 && i < count; i++) {
+    const adjust = drift > 0 ? 1 : -1
+    rounded[i] += adjust
+    drift -= adjust
+  }
+
+  return rounded
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Build a full 4-week training block. Pure function — no I/O.
- * Volume is honoured by reducing session count (rounded down) for lighter weeks.
+ * Every week produces exactly 5 sessions (one per skill area).
+ * Time per session is weighted by priority score (higher = more time).
+ * Week volume scales the total weekly time budget.
  */
 export function generateBlockStructure(
   priorities: SkillPriority[],
@@ -71,28 +70,26 @@ export function generateBlockStructure(
   blockNumber: number,
   drillPool: Drill[],
 ): TrainingBlock {
-  const baseSessionCount = sessionsPerWeek(weeklyTime)
-  const baseDuration = SESSION_DURATION[weeklyTime]
+  const baseBudget = WEEKLY_TIME_BUDGET[weeklyTime]
   const sessions: Session[] = []
   let sessionNumber = 1
 
-  const weeks: Array<1 | 2 | 3 | 4> = [1, 2, 3, 4]
+  for (const weekNumber of [1, 2, 3, 4] as const) {
+    const weekBudget = Math.round(baseBudget * WEEK_VOLUME[weekNumber])
+    const durations = distributeTime(priorities, weekBudget)
 
-  for (const weekNumber of weeks) {
-    const volume = WEEK_VOLUME[weekNumber]
-    const weekSessions = Math.max(1, Math.round(baseSessionCount * volume))
-
-    for (let slot = 0; slot < weekSessions; slot++) {
-      const primarySkill = pickSkillForSlot(priorities, weekNumber, slot, weekSessions)
+    for (let i = 0; i < priorities.length; i++) {
+      const primarySkill = priorities[i].skill
+      const durationMinutes = durations[i]
       const sessionType = skillToSessionType(primarySkill)
-      const drills = selectDrills(primarySkill, program, baseDuration, drillPool)
+      const drills = selectDrills(primarySkill, program, durationMinutes, drillPool)
 
       sessions.push({
         weekNumber,
         sessionNumber,
         sessionType,
         primarySkill,
-        durationMinutes: baseDuration,
+        durationMinutes,
         drillIds: drills.map((d) => d.id),
       })
 
@@ -118,14 +115,14 @@ export function buildTemplateSummary(block: TrainingBlock): string {
 
   const weekSummaries = ([1, 2, 3, 4] as const).map((week) => {
     const weekSessions = block.sessions.filter((s) => s.weekNumber === week)
-    const skills = [...new Set(weekSessions.map((s) => s.primarySkill))].join(', ')
+    const totalMin = weekSessions.reduce((sum, s) => sum + s.durationMinutes, 0)
     const themes: Record<1 | 2 | 3 | 4, string> = {
       1: 'Foundation',
       2: 'Build',
       3: 'Peak',
       4: 'Consolidate',
     }
-    return `Week ${week} (${themes[week]}): ${weekSessions.length} session${weekSessions.length !== 1 ? 's' : ''} focusing on ${skills || 'all skills'}.`
+    return `Week ${week} (${themes[week]}): ${weekSessions.length} sessions, ${totalMin} min total.`
   })
 
   return (

@@ -10,6 +10,7 @@ Golf performance training app. Users enroll in a Break 100/90/80 program, comple
 - **Push after every meaningful session.** Never leave more than one session's worth of work unpushed. A robust git history is the rollback safety net — treat it that way.
 - **One logical change per commit.** Don't bundle unrelated changes. A new screen, a bug fix, and a config tweak belong in separate commits.
 - **Branch for features.** Main should always be stable. Use feature branches (`feat/onboarding-flow`, `fix/skill-engine-edge-case`) and merge via PR.
+- **Pre-push review**: A Claude agent reviews all unpushed commits before every push. The push is blocked until you approve the review. After approval, re-run with `git push --no-verify` to bypass the review hook for that push.
 
 ---
 

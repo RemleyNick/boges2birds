@@ -46,9 +46,10 @@ export async function updateDisplayName(
   userId: string,
   displayName: string,
 ): Promise<void> {
+  const safeName = displayName.slice(0, 100)
   await db
     .update(users)
-    .set({ displayName, updatedAt: new Date() })
+    .set({ displayName: safeName, updatedAt: new Date() })
     .where(eq(users.id, userId))
 }
 

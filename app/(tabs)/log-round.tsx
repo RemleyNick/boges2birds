@@ -51,18 +51,36 @@ export default function LogRoundScreen() {
       return
     }
 
+    const fwHit = parseInt(fairwaysHit, 10) || 0
+    const fwTotal = parseInt(fairwaysTotal, 10) || (holesPlayed === 18 ? 14 : 7)
+    const gHit = parseInt(girHit, 10) || 0
+    const putts = parseInt(totalPutts, 10) || 0
+    const pens = parseInt(penalties, 10) || 0
+
+    const errors: string[] = []
+    if (score < 18 || score > 200) errors.push('Score must be between 18 and 200.')
+    if (fwHit > fwTotal) errors.push('Fairways hit cannot exceed fairways total.')
+    if (gHit > girTotal) errors.push('GIR hit cannot exceed GIR total.')
+    if (putts < 0 || putts > holesPlayed * 4) errors.push(`Putts must be between 0 and ${holesPlayed * 4}.`)
+    if (pens < 0 || pens > 20) errors.push('Penalties must be between 0 and 20.')
+
+    if (errors.length > 0) {
+      Alert.alert('Invalid input', errors.join('\n'))
+      return
+    }
+
     saveRound.mutate(
       {
         playedAt: new Date(),
-        courseName: courseName.trim() || null,
+        courseName: courseName.trim().slice(0, 100) || null,
         holesPlayed,
         totalScore: score,
-        fairwaysHit: parseInt(fairwaysHit, 10) || 0,
-        fairwaysTotal: parseInt(fairwaysTotal, 10) || (holesPlayed === 18 ? 14 : 7),
-        girHit: parseInt(girHit, 10) || 0,
+        fairwaysHit: fwHit,
+        fairwaysTotal: fwTotal,
+        girHit: gHit,
         girTotal,
-        totalPutts: parseInt(totalPutts, 10) || 0,
-        penalties: parseInt(penalties, 10) || 0,
+        totalPutts: putts,
+        penalties: pens,
       },
       {
         onSuccess: () => {

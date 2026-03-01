@@ -83,7 +83,7 @@ export default function ProfileScreen() {
   }
 
   function saveName() {
-    const trimmed = nameInput.trim()
+    const trimmed = nameInput.trim().slice(0, 100)
     if (trimmed && userId) {
       updateName.mutate(trimmed)
     }

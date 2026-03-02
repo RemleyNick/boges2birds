@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   input: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -193,12 +193,12 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 14,
-    color: '#D32F2F',
+    color: colors.danger,
   },
   button: {
     backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 18,
     alignItems: 'center',
     marginTop: 4,
   },

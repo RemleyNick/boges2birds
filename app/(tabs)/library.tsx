@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { colors } from '@/constants/colors'
@@ -25,7 +25,7 @@ const PROGRAM_LABELS: Record<string, string> = {
 }
 
 export default function LibraryScreen() {
-  const { data: allDrills = [] } = useDrills()
+  const { data: allDrills = [], isLoading } = useDrills()
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -47,7 +47,7 @@ export default function LibraryScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.drillName}>{item.name}</Text>
+          <Text style={styles.drillName} numberOfLines={2}>{item.name}</Text>
           <Text style={styles.duration}>{item.durationMinutes} min</Text>
         </View>
         <View style={styles.badgeRow}>
@@ -68,6 +68,14 @@ export default function LibraryScreen() {
           <Text style={styles.instructions}>{item.instructions}</Text>
         )}
       </TouchableOpacity>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      </SafeAreaView>
     )
   }
 
@@ -100,7 +108,12 @@ export default function LibraryScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No drills found</Text>
+            <Text style={styles.emptyTitle}>No drills found</Text>
+            <Text style={styles.emptyBody}>
+              {activeFilter === 'all'
+                ? 'Drills will appear here once your plan is generated.'
+                : 'Try selecting a different skill area.'}
+            </Text>
           </View>
         }
       />
@@ -112,6 +125,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loader: {
+    flex: 1,
   },
   headerArea: {
     paddingHorizontal: 20,
@@ -128,7 +144,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pill: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -150,7 +166,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   card: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
   },
@@ -177,7 +193,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   skillBadge: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.accentLight,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -188,7 +204,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   programBadge: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -207,9 +223,18 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: 'center',
     paddingTop: 40,
+    paddingHorizontal: 32,
   },
-  emptyText: {
+  emptyTitle: {
     fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 6,
+  },
+  emptyBody: {
+    fontSize: 14,
     color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 })

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
   const userId = useUserStore((s) => s.userId)
   const isGuest = useUserStore((s) => s.isGuest)
 
-  const { data: user } = useUser(userId)
+  const { data: user, isLoading } = useUser(userId)
   const { data: assessment } = useLatestAssessment(userId)
   const { data: activeProgram } = useActiveProgram(userId)
   const { data: roundLogs = [] } = useRoundLogs(userId)
@@ -104,6 +105,14 @@ export default function ProfileScreen() {
     setEditingTime(false)
   }
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <ActivityIndicator color={colors.accent} style={styles.loader} />
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.root}>
       <ScrollView
@@ -133,7 +142,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <TouchableOpacity onPress={startEditName} activeOpacity={0.6}>
-              <Text style={styles.nameDisplay}>
+              <Text style={styles.nameDisplay} numberOfLines={1}>
                 {user?.displayName || 'Tap to set name'}
               </Text>
             </TouchableOpacity>
@@ -151,7 +160,9 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Program</Text>
           {activeProgram ? (
-            <Text style={styles.cardValue}>{activeProgram.programDisplayName}</Text>
+            <Text style={styles.cardValue} numberOfLines={1}>
+              {activeProgram.programDisplayName}
+            </Text>
           ) : (
             <Text style={styles.cardValueMuted}>No active program</Text>
           )}
@@ -291,6 +302,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  loader: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
@@ -305,7 +319,7 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
   },
@@ -364,7 +378,7 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.accentLight,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -383,7 +397,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: colors.border,
   },
   actionText: {
     fontSize: 15,
@@ -421,7 +435,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pill: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: colors.pillInactive,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -479,7 +493,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
   },
@@ -491,6 +505,6 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#D32F2F',
+    color: colors.danger,
   },
 })

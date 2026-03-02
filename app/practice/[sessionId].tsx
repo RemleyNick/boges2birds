@@ -98,7 +98,7 @@ export default function PracticeScreen() {
 
             {/* Drill Info */}
             <View style={styles.drillInfo}>
-              <Text style={styles.drillName}>{sd.drill.name}</Text>
+              <Text style={styles.drillName} numberOfLines={2}>{sd.drill.name}</Text>
               <Text style={styles.drillInstructions} numberOfLines={3}>
                 {sd.drill.instructions}
               </Text>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: colors.borderLight,
   },
   backButton: {
     marginBottom: 12,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   drillCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: colors.disabled,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   durationBadge: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: colors.pillInactive,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -231,16 +231,16 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
     backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: colors.borderLight,
   },
   completeButton: {
     backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 18,
     alignItems: 'center',
   },
   completeButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: colors.disabled,
   },
   completeButtonText: {
     color: '#FFFFFF',

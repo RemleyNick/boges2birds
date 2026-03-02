@@ -8,7 +8,15 @@ import {
 } from '@expo-google-fonts/lilita-one'
 import { useEffect } from 'react'
 import { useRouter, useLocalSearchParams } from 'expo-router'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -72,6 +80,10 @@ export default function BaselineAssessmentScreen() {
         </TouchableOpacity>
       </View>
 
+      <KeyboardAvoidingView
+        style={styles.scroll}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -155,6 +167,7 @@ export default function BaselineAssessmentScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -236,7 +249,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -260,7 +273,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
   },
   pillSelected: {
     backgroundColor: colors.accent,

@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
   cardSelected: {
     borderWidth: 2,
     borderColor: colors.accent,
-    backgroundColor: '#F1F8F1',
+    backgroundColor: colors.accentLight,
   },
   cardUnselected: {
     borderWidth: 1.5,
-    borderColor: '#E5E5E5',
+    borderColor: colors.border,
     backgroundColor: colors.background,
   },
   cardLabel: {

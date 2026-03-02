@@ -27,7 +27,12 @@ export default function HomeScreen() {
   const userId = useUserStore((s) => s.userId)
   const { data: blockData, isLoading } = useActiveTrainingBlock(userId)
 
-  const currentWeek = 1 // TODO: derive from blockData.weekStartDate
+  const currentWeek = (() => {
+    if (!blockData?.weekStartDate) return 1
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000
+    const elapsed = Date.now() - new Date(blockData.weekStartDate).getTime()
+    return Math.max(1, Math.min(4, Math.floor(elapsed / msPerWeek) + 1))
+  })()
   const weekSessions = blockData?.sessions.filter((s) => s.weekNumber === currentWeek) ?? []
 
   if (isLoading) {
@@ -42,7 +47,10 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>No active plan</Text>
+          <Text style={styles.emptyTitle}>No active plan</Text>
+          <Text style={styles.emptyBody}>
+            Complete onboarding to get your first 4-week practice block.
+          </Text>
         </View>
       </SafeAreaView>
     )
@@ -64,7 +72,7 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.cardContent}>
-                <Text style={styles.skill}>
+                <Text style={styles.skill} numberOfLines={1}>
                   {SKILL_LABELS[session.primarySkill as SkillArea]}
                 </Text>
                 <Text style={styles.meta}>{session.durationMinutes} min</Text>
@@ -94,10 +102,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 32,
   },
-  emptyText: {
-    fontSize: 16,
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontSize: 15,
     color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   content: {
     padding: 20,
@@ -110,7 +127,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   card: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',

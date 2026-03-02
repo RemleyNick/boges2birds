@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   input: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   pill: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.cardBg,
     borderRadius: 12,
     paddingHorizontal: 24,
     paddingVertical: 10,
@@ -290,8 +290,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 14,
+    paddingVertical: 18,
     alignItems: 'center',
     marginTop: 20,
   },

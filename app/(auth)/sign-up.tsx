@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { colors } from '@/constants/colors'
 import { signUp } from '@/services/auth'
+import { identifyUser } from '@/services/subscriptions'
 import { migrateGuestToAuth } from '@/repositories/usersRepo'
 import { getActiveTrainingBlock } from '@/repositories/trainingBlocksRepo'
 import { useUserStore } from '@/store/userStore'
@@ -67,6 +68,7 @@ export default function SignUpScreen() {
       useUserStore.getState().setUserId(user.id)
       useUserStore.getState().setIsGuest(false)
 
+      await identifyUser(user.id)
       await queryClient.invalidateQueries()
 
       const block = await getActiveTrainingBlock(user.id)

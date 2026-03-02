@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { colors } from '@/constants/colors'
 import { useActiveTrainingBlock } from '@/hooks/useActiveTrainingBlock'
+import { useEntitlement } from '@/hooks/useEntitlement'
+import { usePaywall } from '@/hooks/usePaywall'
 import { useUserStore } from '@/store/userStore'
 import type { SkillArea } from '@/types'
 
@@ -26,6 +28,8 @@ export default function HomeScreen() {
   const router = useRouter()
   const userId = useUserStore((s) => s.userId)
   const { data: blockData, isLoading } = useActiveTrainingBlock(userId)
+  const { isPremium } = useEntitlement()
+  const { showPaywall } = usePaywall()
 
   const currentWeek = (() => {
     if (!blockData?.weekStartDate) return 1
@@ -64,20 +68,25 @@ export default function HomeScreen() {
         </Text>
         {weekSessions.map((session) => {
           const isDone = session.status === 'complete'
+          const isLocked = !isPremium && currentWeek > 1
           return (
             <TouchableOpacity
               key={session.id}
-              style={[styles.card, isDone && styles.cardDone]}
-              onPress={() => router.push(`/practice/${session.id}`)}
+              style={[styles.card, isDone && styles.cardDone, isLocked && styles.cardLocked]}
+              onPress={() => isLocked ? showPaywall() : router.push(`/practice/${session.id}`)}
               activeOpacity={0.7}
             >
               <View style={styles.cardContent}>
-                <Text style={styles.skill} numberOfLines={1}>
-                  {SKILL_LABELS[session.primarySkill as SkillArea]}
+                <Text style={[styles.skill, isLocked && styles.lockedText]} numberOfLines={1}>
+                  {isLocked ? '\u{1F512} ' : ''}{SKILL_LABELS[session.primarySkill as SkillArea]}
                 </Text>
-                <Text style={styles.meta}>{session.durationMinutes} min</Text>
+                {isLocked ? (
+                  <Text style={styles.lockedMeta}>Upgrade to unlock</Text>
+                ) : (
+                  <Text style={styles.meta}>{session.durationMinutes} min</Text>
+                )}
               </View>
-              {isDone && (
+              {isDone && !isLocked && (
                 <View style={styles.doneBadge}>
                   <Text style={styles.doneBadgeText}>Done</Text>
                 </View>
@@ -164,5 +173,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  cardLocked: {
+    opacity: 0.5,
+  },
+  lockedText: {
+    color: colors.textSubtle,
+  },
+  lockedMeta: {
+    fontSize: 13,
+    color: colors.textSubtle,
+    fontStyle: 'italic',
   },
 })

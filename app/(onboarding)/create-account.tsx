@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { colors } from '@/constants/colors'
 import { signUp } from '@/services/auth'
+import { identifyUser } from '@/services/subscriptions'
 import { migrateGuestToAuth } from '@/repositories/usersRepo'
 import { useUserStore } from '@/store/userStore'
 
@@ -66,6 +67,7 @@ export default function CreateAccountScreen() {
       useUserStore.getState().setUserId(user.id)
       useUserStore.getState().setIsGuest(false)
 
+      await identifyUser(user.id)
       await queryClient.invalidateQueries()
       router.replace('/(tabs)')
     } catch (e: any) {

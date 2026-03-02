@@ -14,6 +14,7 @@ A structured golf practice app for players working to Break 100, 90, or 80. User
 - **Round logging** — track scores, fairways hit, GIR, putts, and penalties over time
 - **Drill library** — curated practice drills mapped to skill areas and session types
 - **Offline-first** — everything works without a connection; syncs to the cloud in the background
+- **Freemium with paywall** — Week 1 preview for free; premium unlocks full training blocks, round logging, and drill library
 
 ---
 
@@ -65,10 +66,10 @@ cp .env.example .env
 ```
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
-OPENAI_API_KEY=
-REVENUECAT_API_KEY_IOS=
-REVENUECAT_API_KEY_ANDROID=
+EXPO_PUBLIC_RC_APPLE_API_KEY=
 ```
+
+> **Note:** RevenueCat requires native modules. Use `npx expo run:ios` or an EAS dev build — paywall features won't work in Expo Go.
 
 ---
 
@@ -102,8 +103,8 @@ src/
 - [x] Round logging (form with input validation)
 - [x] Drill library (skill-area filters, expandable cards)
 - [x] Profile (identity, program, skill ratings, weekly time, round stats)
-- [ ] Auth (sign-up/sign-in, guest migration)
-- [ ] RevenueCat subscription + paywall
+- [x] Auth (sign-up/sign-in, guest migration)
+- [x] RevenueCat subscription + paywall
 - [ ] Offline sync validation
 - [ ] UI/styling polish
 - [ ] App Store release

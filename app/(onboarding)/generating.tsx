@@ -15,6 +15,7 @@ import { computeSkillPriorities } from '@/engine/skillPriorityEngine'
 import { saveSkillAssessment } from '@/repositories/skillAssessmentsRepo'
 import { enrollInProgram } from '@/repositories/userProgramsRepo'
 import { saveTrainingBlock } from '@/repositories/trainingBlocksRepo'
+import { usePaywall } from '@/hooks/usePaywall'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { useUserStore } from '@/store/userStore'
 import type { SkillRatings } from '@/types'
@@ -22,6 +23,7 @@ import { eq } from 'drizzle-orm'
 
 export default function GeneratingScreen() {
   const router = useRouter()
+  const { showPaywall } = usePaywall()
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
 
   // Three pulsing dots
@@ -74,7 +76,10 @@ export default function GeneratingScreen() {
 
     Promise.all([run(), minDelay])
       .catch((e) => console.error('[generating] Setup error:', e))
-      .finally(() => {
+      .finally(async () => {
+        // Show paywall as a conversion opportunity (non-blocking)
+        await showPaywall().catch(() => {})
+
         if (isGuest) {
           router.replace('/(onboarding)/create-account')
         } else {

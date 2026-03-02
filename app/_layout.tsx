@@ -18,6 +18,7 @@ import { runMigrations } from '@/db/migrate'
 import { seedSystemDrills } from '@/db/seedDrills'
 import { getOrCreateGuestUser, getOrCreateAuthUser } from '@/repositories/usersRepo'
 import { getSession, onAuthStateChange } from '@/services/auth'
+import { initRevenueCat, identifyUser } from '@/services/subscriptions'
 import { useUserStore } from '@/store/userStore'
 
 export default function RootLayout() {
@@ -46,6 +47,10 @@ export default function RootLayout() {
         useUserStore.getState().setIsGuest(true)
       }
 
+      // 3. Initialize RevenueCat + identify user
+      await initRevenueCat()
+      await identifyUser(useUserStore.getState().userId!)
+
       useUserStore.getState().setAuthReady(true)
       setDbReady(true)
     }
@@ -63,6 +68,7 @@ export default function RootLayout() {
         const userId = await getOrCreateGuestUser()
         useUserStore.getState().setUserId(userId)
         useUserStore.getState().setIsGuest(true)
+        await identifyUser(userId)
         queryClient.invalidateQueries()
       }
     })

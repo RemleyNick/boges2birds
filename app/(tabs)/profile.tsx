@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 
 import { colors } from '@/constants/colors'
+import { useEntitlement } from '@/hooks/useEntitlement'
+import { usePaywall } from '@/hooks/usePaywall'
 import { signOut } from '@/services/auth'
+import { restorePurchases } from '@/services/subscriptions'
 import { useUserStore } from '@/store/userStore'
 import {
   useUser,
@@ -58,6 +62,8 @@ export default function ProfileScreen() {
   const { data: activeProgram } = useActiveProgram(userId)
   const { data: roundLogs = [] } = useRoundLogs(userId)
 
+  const { isPremium } = useEntitlement()
+  const { showPaywall } = usePaywall()
   const updateName = useUpdateDisplayName(userId ?? '')
   const updateTime = useUpdateWeeklyTime(userId ?? '')
 
@@ -148,12 +154,35 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
           <View style={styles.statusRow}>
-            <View style={styles.statusPill}>
-              <Text style={styles.statusPillText}>
-                {user?.subscriptionStatus === 'active' ? 'Premium' : 'Free'}
+            <View style={[styles.statusPill, isPremium && styles.statusPillPremium]}>
+              <Text style={[styles.statusPillText, isPremium && styles.statusPillTextPremium]}>
+                {isPremium ? 'Premium' : 'Free'}
               </Text>
             </View>
           </View>
+          {isPremium && user?.subscriptionExpiresAt && (
+            <Text style={styles.expirationText}>
+              Renews {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
+            </Text>
+          )}
+          {!isPremium && (
+            <View style={styles.upgradeRow}>
+              <TouchableOpacity style={styles.upgradeButton} onPress={() => showPaywall()}>
+                <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.restoreLink}
+                onPress={async () => {
+                  const restored = await restorePurchases()
+                  if (!restored) {
+                    Alert.alert('No purchases found', 'We couldn\'t find an active subscription to restore.')
+                  }
+                }}
+              >
+                <Text style={styles.restoreLinkText}>Restore Purchases</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* ─── Program Card ───────────────────────────────── */}
@@ -506,5 +535,44 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.danger,
+  },
+
+  // Premium / Upgrade
+  statusPillPremium: {
+    backgroundColor: colors.accent,
+  },
+  statusPillTextPremium: {
+    color: '#FFFFFF',
+  },
+  expirationText: {
+    fontSize: 12,
+    color: colors.textSubtle,
+    marginTop: 6,
+  },
+  upgradeRow: {
+    marginTop: 12,
+    gap: 10,
+    alignItems: 'center',
+  },
+  upgradeButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
+  upgradeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  restoreLink: {
+    paddingVertical: 4,
+  },
+  restoreLinkText: {
+    fontSize: 13,
+    color: colors.textSubtle,
+    textDecorationLine: 'underline',
   },
 })

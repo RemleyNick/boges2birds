@@ -3,6 +3,8 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { colors } from '@/constants/colors'
+import { useEntitlement } from '@/hooks/useEntitlement'
+import { usePaywall } from '@/hooks/usePaywall'
 import { useDrills } from '@/hooks/useDrills'
 import type { DrillRow } from '@/db/schema'
 import type { SkillArea } from '@/types'
@@ -26,6 +28,8 @@ const PROGRAM_LABELS: Record<string, string> = {
 
 export default function LibraryScreen() {
   const { data: allDrills = [], isLoading } = useDrills()
+  const { isPremium } = useEntitlement()
+  const { showPaywall } = usePaywall()
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -68,6 +72,23 @@ export default function LibraryScreen() {
           <Text style={styles.instructions}>{item.instructions}</Text>
         )}
       </TouchableOpacity>
+    )
+  }
+
+  if (!isPremium) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.lockedContainer}>
+          <Text style={styles.lockedIcon}>{'\u{1F512}'}</Text>
+          <Text style={styles.lockedTitle}>Browse Drills with Premium</Text>
+          <Text style={styles.lockedBody}>
+            Access the full drill library to level up your game.
+          </Text>
+          <TouchableOpacity style={styles.upgradeButton} onPress={() => showPaywall()}>
+            <Text style={styles.upgradeButtonText}>Upgrade</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     )
   }
 
@@ -236,5 +257,39 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  lockedContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  lockedIcon: {
+    fontSize: 48,
+    marginBottom: 4,
+  },
+  lockedTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  lockedBody: {
+    fontSize: 15,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  upgradeButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    marginTop: 8,
+  },
+  upgradeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 })

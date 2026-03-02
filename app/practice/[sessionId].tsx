@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { colors } from '@/constants/colors'
+import { useEntitlement } from '@/hooks/useEntitlement'
+import { usePaywall } from '@/hooks/usePaywall'
 import {
   useCompleteSession,
   useSessionDetails,
@@ -31,11 +33,15 @@ export default function PracticeScreen() {
   const { data: session, isLoading } = useSessionDetails(sessionId!)
   const toggleDrill = useToggleDrill(sessionId!)
   const completeSessionMutation = useCompleteSession(sessionId!)
+  const { isPremium } = useEntitlement()
+  const { showPaywall } = usePaywall()
 
   const isComplete = session?.status === 'complete'
+  const isReadOnly = !isPremium && (session?.weekNumber ?? 1) === 1
+  const isLockedWeek = !isPremium && (session?.weekNumber ?? 1) > 1
 
   function handleToggleDrill(sessionDrillId: string, currentlyCompleted: boolean) {
-    if (isComplete) return
+    if (isComplete || isReadOnly) return
     toggleDrill.mutate({ sessionDrillId, completed: !currentlyCompleted })
   }
 
@@ -56,6 +62,28 @@ export default function PracticeScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <ActivityIndicator color={colors.accent} style={styles.loader} />
+      </SafeAreaView>
+    )
+  }
+
+  if (isLockedWeek) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.lockedOverlay}>
+          <Text style={styles.lockedIcon}>{'\u{1F512}'}</Text>
+          <Text style={styles.lockedTitle}>Premium Content</Text>
+          <Text style={styles.lockedBody}>
+            Upgrade to Premium to access weeks 2–4 of your training plan.
+          </Text>
+          <TouchableOpacity style={styles.upgradeButton} onPress={() => showPaywall()}>
+            <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     )
   }
@@ -84,17 +112,19 @@ export default function PracticeScreen() {
             key={sd.id}
             style={styles.drillCard}
             onPress={() => handleToggleDrill(sd.id, sd.completed)}
-            activeOpacity={isComplete ? 1 : 0.7}
+            activeOpacity={isComplete || isReadOnly ? 1 : 0.7}
           >
-            {/* Checkbox */}
-            <View
-              style={[
-                styles.checkbox,
-                sd.completed && styles.checkboxChecked,
-              ]}
-            >
-              {sd.completed && <Text style={styles.checkmark}>&#10003;</Text>}
-            </View>
+            {/* Checkbox (hidden in read-only mode) */}
+            {!isReadOnly && (
+              <View
+                style={[
+                  styles.checkbox,
+                  sd.completed && styles.checkboxChecked,
+                ]}
+              >
+                {sd.completed && <Text style={styles.checkmark}>&#10003;</Text>}
+              </View>
+            )}
 
             {/* Drill Info */}
             <View style={styles.drillInfo}>
@@ -110,21 +140,31 @@ export default function PracticeScreen() {
             </View>
           </TouchableOpacity>
         ))}
+
+        {isReadOnly && (
+          <View style={styles.readOnlyBanner}>
+            <Text style={styles.readOnlyText}>
+              This is a preview. Upgrade to track your progress.
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Complete Button */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[styles.completeButton, isComplete && styles.completeButtonDisabled]}
-          onPress={handleCompleteSession}
-          disabled={isComplete || completeSessionMutation.isPending}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.completeButtonText}>
-            {isComplete ? 'Session Complete' : 'Complete Session'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Complete Button (hidden in read-only mode) */}
+      {!isReadOnly && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={[styles.completeButton, isComplete && styles.completeButtonDisabled]}
+            onPress={handleCompleteSession}
+            disabled={isComplete || completeSessionMutation.isPending}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.completeButtonText}>
+              {isComplete ? 'Session Complete' : 'Complete Session'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   )
 }
@@ -246,5 +286,52 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  lockedOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  lockedIcon: {
+    fontSize: 48,
+    marginBottom: 4,
+  },
+  lockedTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  lockedBody: {
+    fontSize: 15,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  upgradeButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    marginTop: 8,
+  },
+  upgradeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  readOnlyBanner: {
+    backgroundColor: colors.accentLight,
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  readOnlyText: {
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 })

@@ -16,7 +16,8 @@ import { Stack } from 'expo-router'
 
 import { runMigrations } from '@/db/migrate'
 import { seedSystemDrills } from '@/db/seedDrills'
-import { getOrCreateGuestUser } from '@/repositories/usersRepo'
+import { getOrCreateGuestUser, getOrCreateAuthUser } from '@/repositories/usersRepo'
+import { getSession, onAuthStateChange } from '@/services/auth'
 import { useUserStore } from '@/store/userStore'
 
 export default function RootLayout() {
@@ -24,19 +25,50 @@ export default function RootLayout() {
   const queryClient = useRef(new QueryClient()).current
 
   useEffect(() => {
-    async function initDb() {
+    async function init() {
+      // 1. DB setup (unchanged)
       await runMigrations()
       await seedSystemDrills()
-      const userId = await getOrCreateGuestUser()
-      useUserStore.getState().setUserId(userId)
+
+      // 2. Check for existing Supabase session
+      const { data: sessionData } = await getSession()
+      const session = sessionData.session
+
+      if (session?.user) {
+        // Returning auth user
+        const userId = await getOrCreateAuthUser(session.user.id, session.user.email!)
+        useUserStore.getState().setUserId(userId)
+        useUserStore.getState().setIsGuest(false)
+      } else {
+        // No session — guest mode
+        const userId = await getOrCreateGuestUser()
+        useUserStore.getState().setUserId(userId)
+        useUserStore.getState().setIsGuest(true)
+      }
+
+      useUserStore.getState().setAuthReady(true)
       setDbReady(true)
     }
 
-    initDb().catch((e) => {
-      console.error('[db] Init failed:', e)
+    init().catch((e) => {
+      console.error('[init] Failed:', e)
       setDbReady(true)
     })
   }, [])
+
+  // Listen for runtime auth state changes (sign-out triggers new guest)
+  useEffect(() => {
+    const { data: { subscription } } = onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT') {
+        const userId = await getOrCreateGuestUser()
+        useUserStore.getState().setUserId(userId)
+        useUserStore.getState().setIsGuest(true)
+        queryClient.invalidateQueries()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [queryClient])
 
   if (!dbReady) {
     return (
@@ -50,6 +82,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="practice/[sessionId]" />

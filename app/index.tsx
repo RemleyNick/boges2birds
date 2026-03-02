@@ -1,14 +1,26 @@
 import { LilitaOne_400Regular, useFonts as useLilita } from "@expo-google-fonts/lilita-one";
 import { DancingScript_600SemiBold, useFonts as useDancing } from "@expo-google-fonts/dancing-script";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useUserStore } from "@/store/userStore";
+
 export default function WelcomeScreen() {
   const router = useRouter();
+  const isAuthReady = useUserStore((s) => s.isAuthReady);
+  const isGuest = useUserStore((s) => s.isGuest);
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular });
   const [dancingLoaded] = useDancing({ DancingScript_600SemiBold });
+
+  // Redirect authenticated users straight to tabs
+  useEffect(() => {
+    if (isAuthReady && !isGuest) {
+      router.replace("/(tabs)");
+    }
+  }, [isAuthReady, isGuest]);
 
   if (!lilitaLoaded || !dancingLoaded) return null;
 
@@ -38,6 +50,15 @@ export default function WelcomeScreen() {
               activeOpacity={0.7}
             >
               <Text style={styles.ctaText}>Get Started</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push("/(auth)/sign-in")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.signInText}>
+                Already have an account? <Text style={styles.signInLink}>Sign In</Text>
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -89,7 +110,8 @@ const styles = StyleSheet.create({
 
   // Bottom block
   bottomSection: {
-    gap: 28,
+    gap: 20,
+    alignItems: "center",
   },
 
   // Frosted glass button
@@ -100,11 +122,23 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: "center",
+    alignSelf: "stretch",
   },
   ctaText: {
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "600",
     letterSpacing: 0.4,
+  },
+
+  // Sign in link
+  signInText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 14,
+  },
+  signInLink: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 });

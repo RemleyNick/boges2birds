@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 
 import { colors } from '@/constants/colors'
+import { signOut } from '@/services/auth'
 import { useUserStore } from '@/store/userStore'
 import {
   useUser,
@@ -49,6 +50,7 @@ const WEEKLY_TIMES: { value: WeeklyTime; label: string }[] = [
 export default function ProfileScreen() {
   const router = useRouter()
   const userId = useUserStore((s) => s.userId)
+  const isGuest = useUserStore((s) => s.isGuest)
 
   const { data: user } = useUser(userId)
   const { data: assessment } = useLatestAssessment(userId)
@@ -256,6 +258,29 @@ export default function ProfileScreen() {
             <Text style={styles.cardValueMuted}>No rounds logged yet</Text>
           )}
         </View>
+
+        {/* ─── Account Actions ────────────────────────────── */}
+        {isGuest ? (
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => router.push('/(auth)/sign-up')}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.createAccountText}>Create Account</Text>
+            <Text style={[styles.actionChevron, { color: colors.accent }]}>›</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={async () => {
+              await signOut()
+              router.replace('/')
+            }}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -447,5 +472,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSubtle,
     marginTop: 2,
+  },
+
+  // Account actions
+  accountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 16,
+  },
+  createAccountText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent,
+  },
+  signOutText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#D32F2F',
   },
 })

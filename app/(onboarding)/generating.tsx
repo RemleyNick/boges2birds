@@ -70,9 +70,17 @@ export default function GeneratingScreen() {
       useOnboardingStore.getState().reset()
     }
 
+    const isGuest = useUserStore.getState().isGuest
+
     Promise.all([run(), minDelay])
       .catch((e) => console.error('[generating] Setup error:', e))
-      .finally(() => router.replace('/(tabs)'))
+      .finally(() => {
+        if (isGuest) {
+          router.replace('/(onboarding)/create-account')
+        } else {
+          router.replace('/(tabs)')
+        }
+      })
   }, [router])
 
   if (!lilitaLoaded) return null

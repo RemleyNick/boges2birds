@@ -2,6 +2,7 @@ import { desc, eq, and } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { users, skillAssessments, userPrograms, programs } from '@/db/schema'
 import type { User, SkillAssessment } from '@/db/schema'
+import { logSyncEntry } from './syncLogHelper'
 
 export async function getUser(userId: string): Promise<User | undefined> {
   return db.select().from(users).where(eq(users.id, userId)).get()
@@ -51,6 +52,7 @@ export async function updateDisplayName(
     .update(users)
     .set({ displayName: safeName, updatedAt: new Date() })
     .where(eq(users.id, userId))
+  await logSyncEntry('users', userId, 'update')
 }
 
 export async function updateWeeklyTime(
@@ -64,4 +66,5 @@ export async function updateWeeklyTime(
     .update(skillAssessments)
     .set({ weeklyTimeAvailable: weeklyTime, updatedAt: new Date() })
     .where(eq(skillAssessments.id, latest.id))
+  await logSyncEntry('skill_assessments', latest.id, 'update')
 }

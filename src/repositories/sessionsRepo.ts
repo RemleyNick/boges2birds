@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { drills, sessionDrills, sessions } from '@/db/schema'
 import type { DrillRow, SessionDrill, SessionRow } from '@/db/schema'
+import { logSyncEntry } from './syncLogHelper'
 
 export interface SessionDrillDetail extends SessionDrill {
   drill: DrillRow
@@ -45,6 +46,7 @@ export async function toggleDrillComplete(
     .update(sessionDrills)
     .set({ completed, updatedAt: new Date() })
     .where(eq(sessionDrills.id, sessionDrillId))
+  await logSyncEntry('session_drills', sessionDrillId, 'update')
 }
 
 export async function completeSession(sessionId: string): Promise<void> {
@@ -52,4 +54,5 @@ export async function completeSession(sessionId: string): Promise<void> {
     .update(sessions)
     .set({ status: 'complete', updatedAt: new Date() })
     .where(eq(sessions.id, sessionId))
+  await logSyncEntry('sessions', sessionId, 'update')
 }

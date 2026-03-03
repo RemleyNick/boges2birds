@@ -7,11 +7,15 @@ const ENTITLEMENT_ID = 'premium'
 
 export async function initRevenueCat(): Promise<void> {
   const apiKey = process.env.EXPO_PUBLIC_RC_APPLE_API_KEY
-  if (!apiKey) {
-    console.warn('[RevenueCat] No API key found — skipping init')
+  if (!apiKey || apiKey.startsWith('appl_XXXX')) {
+    console.warn('[RevenueCat] No valid API key — skipping init')
     return
   }
-  Purchases.configure({ apiKey })
+  try {
+    Purchases.configure({ apiKey })
+  } catch (e) {
+    console.warn('[RevenueCat] configure failed (expected in Expo Go):', e)
+  }
 }
 
 export async function identifyUser(userId: string): Promise<void> {

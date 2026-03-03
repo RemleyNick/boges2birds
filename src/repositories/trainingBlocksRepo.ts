@@ -3,9 +3,16 @@ import { db } from '@/db/client'
 import { sessions as sessionsTable, sessionDrills, trainingBlocks } from '@/db/schema'
 import type { SessionRow, TrainingBlockRow } from '@/db/schema'
 import type { TrainingBlock } from '@/types'
+import { logSyncEntries } from '@/repositories/syncLogHelper'
 
 export interface ActiveTrainingBlock extends TrainingBlockRow {
   sessions: SessionRow[]
+}
+
+interface SyncEntry {
+  tableName: string
+  recordId: string
+  operation: 'insert' | 'update' | 'delete'
 }
 
 export async function saveTrainingBlock(
@@ -17,6 +24,8 @@ export async function saveTrainingBlock(
   const today = new Date()
   const endDate = new Date(today)
   endDate.setDate(endDate.getDate() + 28)
+
+  const syncEntries: SyncEntry[] = []
 
   await db.insert(trainingBlocks).values({
     id: blockId,
@@ -30,6 +39,7 @@ export async function saveTrainingBlock(
     createdAt: now,
     updatedAt: now,
   })
+  syncEntries.push({ tableName: 'training_blocks', recordId: blockId, operation: 'insert' })
 
   for (const session of block.sessions) {
     const sessionId = crypto.randomUUID()
@@ -45,10 +55,12 @@ export async function saveTrainingBlock(
       createdAt: now,
       updatedAt: now,
     })
+    syncEntries.push({ tableName: 'sessions', recordId: sessionId, operation: 'insert' })
 
     for (let i = 0; i < session.drillIds.length; i++) {
+      const drillId = crypto.randomUUID()
       await db.insert(sessionDrills).values({
-        id: crypto.randomUUID(),
+        id: drillId,
         sessionId,
         drillId: session.drillIds[i],
         orderIndex: i,
@@ -56,8 +68,11 @@ export async function saveTrainingBlock(
         createdAt: now,
         updatedAt: now,
       })
+      syncEntries.push({ tableName: 'session_drills', recordId: drillId, operation: 'insert' })
     }
   }
+
+  await logSyncEntries(syncEntries)
 
   return blockId
 }

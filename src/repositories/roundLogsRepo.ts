@@ -2,6 +2,7 @@ import { desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { roundLogs } from '@/db/schema'
 import type { RoundLog } from '@/db/schema'
+import { logSyncEntry } from './syncLogHelper'
 
 export interface SaveRoundLogInput {
   playedAt: Date
@@ -49,6 +50,7 @@ export async function saveRoundLog(
     createdAt: now,
     updatedAt: now,
   })
+  await logSyncEntry('round_logs', id, 'insert')
 
   return id
 }

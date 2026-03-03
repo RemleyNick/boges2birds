@@ -30,7 +30,7 @@ const SKILL_LABELS: Record<SkillArea, string> = {
 export default function PracticeScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>()
   const router = useRouter()
-  const { data: session, isLoading } = useSessionDetails(sessionId!)
+  const { data: session, isLoading, isError, refetch } = useSessionDetails(sessionId!)
   const toggleDrill = useToggleDrill(sessionId!)
   const completeSessionMutation = useCompleteSession(sessionId!)
   const { isPremium } = useEntitlement()
@@ -58,10 +58,31 @@ export default function PracticeScreen() {
     router.back()
   }
 
-  if (isLoading || !session) {
+  if (isLoading || (!session && !isError)) {
     return (
       <SafeAreaView style={styles.root}>
         <ActivityIndicator color={colors.accent} style={styles.loader} />
+      </SafeAreaView>
+    )
+  }
+
+  if (isError || !session) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.lockedOverlay}>
+          <Text style={styles.lockedTitle}>Failed to load session</Text>
+          <Text style={styles.lockedBody}>
+            Something went wrong. Tap below to try again.
+          </Text>
+          <TouchableOpacity style={styles.upgradeButton} onPress={() => refetch()}>
+            <Text style={styles.upgradeButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     )
   }

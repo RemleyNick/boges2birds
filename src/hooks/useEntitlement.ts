@@ -8,6 +8,9 @@ import {
   syncSubscriptionToDb,
 } from '@/services/subscriptions'
 
+// In development, set EXPO_PUBLIC_FORCE_PREMIUM=true in .env to bypass the paywall
+const DEV_PREMIUM = __DEV__ && process.env.EXPO_PUBLIC_FORCE_PREMIUM === 'true'
+
 export function useEntitlement(): { isPremium: boolean; isLoading: boolean } {
   const userId = useUserStore((s) => s.userId)
   const queryClient = useQueryClient()
@@ -15,7 +18,7 @@ export function useEntitlement(): { isPremium: boolean; isLoading: boolean } {
   const { data: isPremium = false, isLoading } = useQuery({
     queryKey: ['entitlement', userId],
     queryFn: checkEntitlement,
-    enabled: !!userId,
+    enabled: !!userId && !DEV_PREMIUM,
     staleTime: 5 * 60 * 1000, // 5 min
   })
 
@@ -29,6 +32,8 @@ export function useEntitlement(): { isPremium: boolean; isLoading: boolean } {
 
     return unsubscribe
   }, [userId, queryClient])
+
+  if (DEV_PREMIUM) return { isPremium: true, isLoading: false }
 
   // Safe default — never accidentally grant access while loading
   return { isPremium: isLoading ? false : isPremium, isLoading }

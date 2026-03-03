@@ -57,7 +57,7 @@ export default function ProfileScreen() {
   const userId = useUserStore((s) => s.userId)
   const isGuest = useUserStore((s) => s.isGuest)
 
-  const { data: user, isLoading } = useUser(userId)
+  const { data: user, isLoading, isError, refetch } = useUser(userId)
   const { data: assessment } = useLatestAssessment(userId)
   const { data: activeProgram } = useActiveProgram(userId)
   const { data: roundLogs = [] } = useRoundLogs(userId)
@@ -115,6 +115,20 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <ActivityIndicator color={colors.accent} style={styles.loader} />
+      </SafeAreaView>
+    )
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.heading}>Profile</Text>
+          <Text style={styles.cardValueMuted}>Failed to load profile.</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     )
   }
@@ -574,5 +588,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSubtle,
     textDecorationLine: 'underline',
+  },
+
+  // Error state
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  retryButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 })

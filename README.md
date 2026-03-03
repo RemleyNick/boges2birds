@@ -67,6 +67,8 @@ cp .env.example .env
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 EXPO_PUBLIC_RC_APPLE_API_KEY=
+EXPO_PUBLIC_OPENAI_API_KEY=
+EXPO_PUBLIC_SENTRY_DSN=
 ```
 
 > **Note:** RevenueCat requires native modules. Use `npx expo run:ios` or an EAS dev build — paywall features won't work in Expo Go.
@@ -105,6 +107,17 @@ src/
 - [x] Profile (identity, program, skill ratings, weekly time, round stats)
 - [x] Auth (sign-up/sign-in, guest migration)
 - [x] RevenueCat subscription + paywall
-- [ ] Offline sync validation
-- [ ] UI/styling polish
-- [ ] App Store release
+- [x] Offline sync (SQLite → Supabase push pipeline)
+- [x] UI/styling polish
+- [x] EAS build config + app identifiers
+- [x] Error boundary + crash reporting (Sentry)
+- [x] LLM integration (OpenAI gpt-4o-mini)
+- [x] Mutation error handling across screens
+- [x] Apple privacy manifest
+- [ ] RevenueCat dashboard setup (create project, configure products in App Store Connect, add real API key to `.env`)
+- [ ] Sentry project setup (create project at sentry.io, add DSN to `.env`)
+- [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)
+- [ ] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
+- [ ] First EAS preview build + device testing (`eas build --profile preview`)
+- [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)
+- [ ] App Store submission

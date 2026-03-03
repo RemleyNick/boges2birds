@@ -91,6 +91,9 @@ export default function LogRoundScreen() {
           Alert.alert('Round saved!', 'Your round has been logged.')
           resetForm()
         },
+        onError: () => {
+          Alert.alert('Save failed', 'Something went wrong saving your round. Please try again.')
+        },
       },
     )
   }

@@ -132,11 +132,7 @@ export function buildTemplateSummary(block: TrainingBlock): string {
 }
 
 /**
- * Async LLM enrichment — stubbed until src/services/llm.ts is implemented.
- * Returns the template summary immediately. When llm.ts is ready, replace the
- * body with an actual OpenAI call.
+ * Re-export the LLM enrichment from the service layer.
+ * Falls back to template summary if the API key is missing or the call fails.
  */
-export async function enrichWithLLMSummary(block: TrainingBlock): Promise<string> {
-  // TODO: wire to src/services/llm.ts when available
-  return buildTemplateSummary(block)
-}
+export { enrichWithLLMSummary } from '@/services/llm'

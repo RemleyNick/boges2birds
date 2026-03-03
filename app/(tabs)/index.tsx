@@ -27,7 +27,7 @@ const WEEK_THEMES: Record<number, string> = {
 export default function HomeScreen() {
   const router = useRouter()
   const userId = useUserStore((s) => s.userId)
-  const { data: blockData, isLoading } = useActiveTrainingBlock(userId)
+  const { data: blockData, isLoading, isError, refetch } = useActiveTrainingBlock(userId)
   const { isPremium } = useEntitlement()
   const { showPaywall } = usePaywall()
 
@@ -43,6 +43,26 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <ActivityIndicator color={colors.accent} style={styles.loader} />
+      </SafeAreaView>
+    )
+  }
+
+  if (isError) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>Failed to load your plan</Text>
+          <Text style={styles.emptyBody}>
+            Something went wrong. Tap below to try again.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => refetch()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     )
   }
@@ -184,5 +204,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSubtle,
     fontStyle: 'italic',
+  },
+  retryButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 })

@@ -120,4 +120,5 @@ src/
 - [ ] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
 - [ ] First EAS preview build + device testing (`eas build --profile preview`)
 - [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)
+- [ ] Update App Store link in landing page (`docs/index.html` — replace `href="#"` on the App Store badge once the app is live)
 - [ ] App Store submission

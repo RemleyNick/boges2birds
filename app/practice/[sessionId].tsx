@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -35,6 +36,8 @@ export default function PracticeScreen() {
   const completeSessionMutation = useCompleteSession(sessionId!)
   const { isPremium } = useEntitlement()
   const { showPaywall } = usePaywall()
+
+  const [expandedDrillId, setExpandedDrillId] = useState<string | null>(null)
 
   const isComplete = session?.status === 'complete'
   const isReadOnly = !isPremium && (session?.weekNumber ?? 1) === 1
@@ -128,39 +131,53 @@ export default function PracticeScreen() {
 
       {/* Drill List */}
       <ScrollView contentContainerStyle={styles.drillList}>
-        {session.drills.map((sd) => (
-          <TouchableOpacity
-            key={sd.id}
-            style={styles.drillCard}
-            onPress={() => handleToggleDrill(sd.id, sd.completed)}
-            activeOpacity={isComplete || isReadOnly ? 1 : 0.7}
-          >
-            {/* Checkbox (hidden in read-only mode) */}
-            {!isReadOnly && (
-              <View
-                style={[
-                  styles.checkbox,
-                  sd.completed && styles.checkboxChecked,
-                ]}
+        {session.drills.map((sd) => {
+          const isExpanded = expandedDrillId === sd.id
+          return (
+            <View key={sd.id} style={styles.drillCard}>
+              {/* Checkbox (hidden in read-only mode) */}
+              {!isReadOnly && (
+                <TouchableOpacity
+                  onPress={() => handleToggleDrill(sd.id, sd.completed)}
+                  activeOpacity={isComplete ? 1 : 0.7}
+                  style={styles.checkboxTouchable}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      sd.completed && styles.checkboxChecked,
+                    ]}
+                  >
+                    {sd.completed && <Text style={styles.checkmark}>&#10003;</Text>}
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Drill Info — tappable to expand/collapse */}
+              <TouchableOpacity
+                style={styles.drillInfo}
+                onPress={() => setExpandedDrillId(isExpanded ? null : sd.id)}
+                activeOpacity={0.7}
               >
-                {sd.completed && <Text style={styles.checkmark}>&#10003;</Text>}
+                <Text style={styles.drillName} numberOfLines={2}>{sd.drill.name}</Text>
+                <Text
+                  style={styles.drillInstructions}
+                  numberOfLines={isExpanded ? undefined : 3}
+                >
+                  {sd.drill.instructions}
+                </Text>
+                <Text style={styles.expandHint}>
+                  {isExpanded ? 'Show less' : 'Show more'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Duration Badge */}
+              <View style={styles.durationBadge}>
+                <Text style={styles.durationText}>{sd.drill.durationMinutes} min</Text>
               </View>
-            )}
-
-            {/* Drill Info */}
-            <View style={styles.drillInfo}>
-              <Text style={styles.drillName} numberOfLines={2}>{sd.drill.name}</Text>
-              <Text style={styles.drillInstructions} numberOfLines={3}>
-                {sd.drill.instructions}
-              </Text>
             </View>
-
-            {/* Duration Badge */}
-            <View style={styles.durationBadge}>
-              <Text style={styles.durationText}>{sd.drill.durationMinutes} min</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+          )
+        })}
 
         {isReadOnly && (
           <View style={styles.readOnlyBanner}>
@@ -238,6 +255,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
   },
+  checkboxTouchable: {
+    marginTop: 2,
+  },
   checkbox: {
     width: 28,
     height: 28,
@@ -270,6 +290,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     lineHeight: 18,
+  },
+  expandHint: {
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: '500',
+    marginTop: 4,
   },
   durationBadge: {
     backgroundColor: colors.pillInactive,

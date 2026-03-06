@@ -114,11 +114,12 @@ src/
 - [x] LLM integration (OpenAI gpt-4o-mini)
 - [x] Mutation error handling across screens
 - [x] Apple privacy manifest
-- [ ] RevenueCat dashboard setup (create project, configure products in App Store Connect, add real API key to `.env`)
+- [x] RevenueCat dashboard setup (create project, configure products in App Store Connect, add real API key to `.env`)
 - [ ] Sentry project setup (create project at sentry.io, add DSN to `.env`)
-- [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)
-- [ ] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
+- [x] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
+- [ ] Set price for Premium membership in App Store Connect
 - [ ] First EAS preview build + device testing (`eas build --profile preview`)
 - [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)
 - [ ] Update App Store link in landing page (`docs/index.html` — replace `href="#"` on the App Store badge once the app is live)
 - [ ] App Store submission
+- [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)

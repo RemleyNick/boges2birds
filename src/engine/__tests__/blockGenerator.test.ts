@@ -167,6 +167,45 @@ describe('generateBlockStructure', () => {
       expect(max - min).toBeLessThanOrEqual(1)
     }
   })
+
+  it('sessions have drills array with DrillAllocation shape', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, '60-90', 'break100', 1, DRILL_SEEDS)
+    for (const s of block.sessions) {
+      expect(Array.isArray(s.drills)).toBe(true)
+      for (const d of s.drills) {
+        expect(d).toHaveProperty('drillId')
+        expect(d).toHaveProperty('durationOverride')
+        expect(d).toHaveProperty('shotCountOverride')
+      }
+    }
+  })
+
+  it('scales drills when session budget is smaller than shortest drill', () => {
+    // <60 budget, week 1 (0.6 multiplier) = 27 min total / 5 skills = ~5 min per session
+    const block = generateBlockStructure(MOCK_PRIORITIES, '<60', 'break100', 1, DRILL_SEEDS)
+    const smallSessions = block.sessions.filter((s) => s.durationMinutes < 10)
+    for (const s of smallSessions) {
+      // At least one drill should have scaling overrides
+      const scaledDrills = s.drills.filter((d) => d.shotCountOverride !== null)
+      expect(scaledDrills.length).toBeGreaterThan(0)
+      for (const d of scaledDrills) {
+        expect(d.durationOverride).toBeGreaterThan(0)
+        expect(d.shotCountOverride).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('does not scale drills when session budget exceeds all drill durations', () => {
+    // Equal priorities with 240+ budget: 300 min / 5 = 60 min per skill even at week 1 (0.6)
+    // That's 36 min each — all drills are ≤30 min, so at least the first drill should never be scaled
+    const block = generateBlockStructure(EQUAL_PRIORITIES, '240+', 'break100', 1, DRILL_SEEDS)
+    const week3Sessions = block.sessions.filter((s) => s.weekNumber === 3)
+    for (const s of week3Sessions) {
+      // First drill should always fit without scaling
+      expect(s.drills[0].durationOverride).toBeNull()
+      expect(s.drills[0].shotCountOverride).toBeNull()
+    }
+  })
 })
 
 describe('buildTemplateSummary', () => {

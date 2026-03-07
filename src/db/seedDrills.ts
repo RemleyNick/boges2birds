@@ -1,10 +1,12 @@
+import { sql } from 'drizzle-orm'
 import { db } from './client'
 import { drills } from './schema'
 import { DRILL_SEEDS } from '@/engine/drillSeeds'
 
 /**
- * Insert system drills into the DB if they don't already exist.
- * Safe to call on every app start — INSERT OR IGNORE on the stable seed IDs.
+ * Insert or update system drills in the DB.
+ * Uses upsert so existing drills get updated shotCount and any other changes.
+ * Safe to call on every app start.
  */
 export async function seedSystemDrills(): Promise<void> {
   const now = new Date()
@@ -16,6 +18,7 @@ export async function seedSystemDrills(): Promise<void> {
     sessionType: d.sessionType,
     difficulty: null,
     durationMinutes: d.durationMinutes,
+    shotCount: d.shotCount,
     programSlugs: d.programSlugs,
     instructions: d.instructions,
     isSystem: true,
@@ -23,5 +26,18 @@ export async function seedSystemDrills(): Promise<void> {
     updatedAt: now,
   }))
 
-  await db.insert(drills).values(rows).onConflictDoNothing()
+  await db
+    .insert(drills)
+    .values(rows)
+    .onConflictDoUpdate({
+      target: drills.id,
+      set: {
+        name: sql`excluded.name`,
+        durationMinutes: sql`excluded.duration_minutes`,
+        shotCount: sql`excluded.shot_count`,
+        instructions: sql`excluded.instructions`,
+        programSlugs: sql`excluded.program_slugs`,
+        updatedAt: now,
+      },
+    })
 }

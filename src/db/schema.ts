@@ -127,6 +127,7 @@ export const drills = sqliteTable('drills', {
   sessionType: text('session_type').notNull(),   // SessionType
   difficulty: integer('difficulty'),             // 1–3, nullable
   durationMinutes: integer('duration_minutes').notNull(),
+  shotCount: integer('shot_count'),
   // JSON array — drills can belong to multiple programs
   programSlugs: text('program_slugs', { mode: 'json' })
     .$type<ProgramSlug[]>()
@@ -148,6 +149,8 @@ export const sessionDrills = sqliteTable('session_drills', {
     .notNull()
     .references(() => drills.id),
   orderIndex: integer('order_index').notNull(),
+  durationOverride: integer('duration_override'),
+  shotCountOverride: integer('shot_count_override'),
   completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
   ...timestamps,
 })

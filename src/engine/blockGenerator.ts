@@ -1,4 +1,4 @@
-import type { Drill, ProgramSlug, Session, SessionType, SkillArea, SkillPriority, TrainingBlock, WeeklyTime } from '@/types'
+import type { Drill, DrillAllocation, ProgramSlug, Session, SessionType, SkillArea, SkillPriority, TrainingBlock, WeeklyTime } from '@/types'
 import { MIN_SESSION_DURATION, WEEKLY_TIME_BUDGET, WEEK_VOLUME } from './thresholds'
 import { selectDrills } from './drillSelector'
 
@@ -82,7 +82,12 @@ export function generateBlockStructure(
       const primarySkill = priorities[i].skill
       const durationMinutes = durations[i]
       const sessionType = skillToSessionType(primarySkill)
-      const drills = selectDrills(primarySkill, program, durationMinutes, drillPool)
+      const selectedDrills = selectDrills(primarySkill, program, durationMinutes, drillPool)
+      const drillAllocations: DrillAllocation[] = selectedDrills.map((sd) => ({
+        drillId: sd.drill.id,
+        durationOverride: sd.durationOverride,
+        shotCountOverride: sd.shotCountOverride,
+      }))
 
       sessions.push({
         weekNumber,
@@ -90,7 +95,7 @@ export function generateBlockStructure(
         sessionType,
         primarySkill,
         durationMinutes,
-        drillIds: drills.map((d) => d.id),
+        drills: drillAllocations,
       })
 
       sessionNumber++

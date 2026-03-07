@@ -97,3 +97,15 @@ export const WEEK_VOLUME: Record<1 | 2 | 3 | 4, number> = {
 // ─── Session duration constraints ─────────────────────────────────────────────
 
 export const MIN_SESSION_DURATION = 10  // minutes — floor per skill session
+
+// ─── Per-shot time rates ──────────────────────────────────────────────────────
+// Minutes per shot for each skill category. Used to scale drill shot counts
+// when the session budget is smaller than the drill's default duration.
+
+export const MIN_PER_SHOT: Record<SkillArea, number> = {
+  teeShot:    1.5,
+  irons:      1.25,
+  shortGame:  1.0,
+  putting:    0.75,
+  courseMgmt: 1.5,
+}

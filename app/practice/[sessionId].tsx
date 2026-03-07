@@ -160,6 +160,11 @@ export default function PracticeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.drillName} numberOfLines={2}>{sd.drill.name}</Text>
+                {sd.shotCountOverride != null && (
+                  <Text style={styles.scaledNote}>
+                    Shortened: {sd.shotCountOverride} shots &middot; {sd.durationOverride} min
+                  </Text>
+                )}
                 <Text
                   style={styles.drillInstructions}
                   numberOfLines={isExpanded ? undefined : 3}
@@ -173,7 +178,9 @@ export default function PracticeScreen() {
 
               {/* Duration Badge */}
               <View style={styles.durationBadge}>
-                <Text style={styles.durationText}>{sd.drill.durationMinutes} min</Text>
+                <Text style={styles.durationText}>
+                  {sd.durationOverride ?? sd.drill.durationMinutes} min
+                </Text>
               </View>
             </View>
           )
@@ -285,6 +292,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+  scaledNote: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.accent,
+    fontStyle: 'italic',
   },
   drillInstructions: {
     fontSize: 13,

@@ -37,7 +37,7 @@ export interface Session {
   sessionType: SessionType
   primarySkill: SkillArea
   durationMinutes: number
-  drillIds: string[]
+  drills: DrillAllocation[]
 }
 
 export interface TrainingBlock {
@@ -53,6 +53,13 @@ export interface Drill {
   skillArea: SkillArea
   sessionType: SessionType
   durationMinutes: number
+  shotCount: number
   programSlugs: ProgramSlug[]
   instructions: string
+}
+
+export interface DrillAllocation {
+  drillId: string
+  durationOverride: number | null
+  shotCountOverride: number | null
 }

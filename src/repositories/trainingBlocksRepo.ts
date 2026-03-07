@@ -57,18 +57,21 @@ export async function saveTrainingBlock(
     })
     syncEntries.push({ tableName: 'sessions', recordId: sessionId, operation: 'insert' })
 
-    for (let i = 0; i < session.drillIds.length; i++) {
-      const drillId = crypto.randomUUID()
+    for (let i = 0; i < session.drills.length; i++) {
+      const allocation = session.drills[i]
+      const sdId = crypto.randomUUID()
       await db.insert(sessionDrills).values({
-        id: drillId,
+        id: sdId,
         sessionId,
-        drillId: session.drillIds[i],
+        drillId: allocation.drillId,
         orderIndex: i,
+        durationOverride: allocation.durationOverride,
+        shotCountOverride: allocation.shotCountOverride,
         completed: false,
         createdAt: now,
         updatedAt: now,
       })
-      syncEntries.push({ tableName: 'session_drills', recordId: drillId, operation: 'insert' })
+      syncEntries.push({ tableName: 'session_drills', recordId: sdId, operation: 'insert' })
     }
   }
 

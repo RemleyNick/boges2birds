@@ -2,11 +2,12 @@
 
 import journal from './meta/_journal.json';
 import m0000 from './0000_nappy_vargas.sql';
+import m0001 from './0001_shot_count_scaling.sql';
 
   export default {
     journal,
     migrations: {
-      m0000
+      m0000,
+      m0001
     }
   }
-  

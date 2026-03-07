@@ -1,11 +1,18 @@
 import Purchases, { type CustomerInfo } from 'react-native-purchases'
+import Constants from 'expo-constants'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
 
 const ENTITLEMENT_ID = 'premium'
 
+const isExpoGo = Constants.appOwnership === 'expo'
+
 export async function initRevenueCat(): Promise<void> {
+  if (isExpoGo) {
+    console.warn('[RevenueCat] Skipping init — not supported in Expo Go')
+    return
+  }
   const apiKey = process.env.EXPO_PUBLIC_RC_APPLE_API_KEY
   if (!apiKey || apiKey.startsWith('appl_XXXX')) {
     console.warn('[RevenueCat] No valid API key — skipping init')
@@ -14,7 +21,7 @@ export async function initRevenueCat(): Promise<void> {
   try {
     Purchases.configure({ apiKey })
   } catch (e) {
-    console.warn('[RevenueCat] configure failed (expected in Expo Go):', e)
+    console.warn('[RevenueCat] configure failed:', e)
   }
 }
 

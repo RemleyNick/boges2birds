@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { colors } from '@/constants/colors'
+import { resolveInstructions } from '@/engine/drillInstructions'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
 import {
@@ -160,16 +161,11 @@ export default function PracticeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.drillName} numberOfLines={2}>{sd.drill.name}</Text>
-                {sd.shotCountOverride != null && (
-                  <Text style={styles.scaledNote}>
-                    Shortened: {sd.shotCountOverride} shots &middot; {sd.durationOverride} min
-                  </Text>
-                )}
                 <Text
                   style={styles.drillInstructions}
                   numberOfLines={isExpanded ? undefined : 3}
                 >
-                  {sd.drill.instructions}
+                  {resolveInstructions(sd.drill, sd.shotCountOverride)}
                 </Text>
                 <Text style={styles.expandHint}>
                   {isExpanded ? 'Show less' : 'Show more'}
@@ -292,12 +288,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-  },
-  scaledNote: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.accent,
-    fontStyle: 'italic',
   },
   drillInstructions: {
     fontSize: 13,

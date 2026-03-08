@@ -77,7 +77,7 @@ export const PROGRAM_MULTIPLIERS: Record<ProgramSlug, Record<SkillArea, number>>
 // Midpoint minutes for each weekly time bucket.
 
 export const WEEKLY_TIME_BUDGET: Record<WeeklyTime, number> = {
-  '<60':     45,
+  '<60':     55,
   '60-90':   75,
   '90-150':  120,
   '150-240': 195,

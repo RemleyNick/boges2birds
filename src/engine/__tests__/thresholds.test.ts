@@ -93,7 +93,7 @@ describe('WEEKLY_TIME_BUDGET', () => {
       expect(v).toBeGreaterThan(0)
     }
   })
-  it('<60 is 45 min', () => expect(WEEKLY_TIME_BUDGET['<60']).toBe(45))
+  it('<60 is 55 min', () => expect(WEEKLY_TIME_BUDGET['<60']).toBe(55))
   it('240+ is 300 min', () => expect(WEEKLY_TIME_BUDGET['240+']).toBe(300))
 })
 

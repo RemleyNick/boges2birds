@@ -117,8 +117,9 @@ src/
 - [x] RevenueCat dashboard setup (create project, configure products in App Store Connect, add real API key to `.env`)
 - [x] Sentry project setup (create project at sentry.io, add DSN to `.env`)
 - [x] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
-- [ ] Set price for Premium membership in App Store Connect
+- [x] Set price for Premium membership in App Store Connect
 - [ ] First EAS preview build + device testing (`eas build --profile preview`)
+- [ ] Configure Sentry source map upload for production builds (org/project/auth token in EAS env)
 - [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)
 - [ ] Update App Store link in landing page (`docs/index.html` — replace `href="#"` on the App Store badge once the app is live)
 - [ ] App Store submission

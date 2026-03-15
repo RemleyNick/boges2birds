@@ -8,6 +8,13 @@ const ENTITLEMENT_ID = 'premium'
 
 const isExpoGo = Constants.appOwnership === 'expo'
 
+/** Tracks whether Purchases.configure() was called successfully. */
+let isConfigured = false
+
+export function isRevenueCatConfigured(): boolean {
+  return isConfigured
+}
+
 export async function initRevenueCat(): Promise<void> {
   if (isExpoGo) {
     console.warn('[RevenueCat] Skipping init — not supported in Expo Go')
@@ -20,12 +27,14 @@ export async function initRevenueCat(): Promise<void> {
   }
   try {
     Purchases.configure({ apiKey })
+    isConfigured = true
   } catch (e) {
     console.warn('[RevenueCat] configure failed:', e)
   }
 }
 
 export async function identifyUser(userId: string): Promise<void> {
+  if (!isConfigured) return
   try {
     await Purchases.logIn(userId)
   } catch (e) {
@@ -34,6 +43,7 @@ export async function identifyUser(userId: string): Promise<void> {
 }
 
 export async function checkEntitlement(): Promise<boolean> {
+  if (!isConfigured) return false
   try {
     const info = await Purchases.getCustomerInfo()
     return info.entitlements.active[ENTITLEMENT_ID] !== undefined
@@ -43,6 +53,7 @@ export async function checkEntitlement(): Promise<boolean> {
 }
 
 export async function restorePurchases(): Promise<boolean> {
+  if (!isConfigured) return false
   try {
     const info = await Purchases.restorePurchases()
     return info.entitlements.active[ENTITLEMENT_ID] !== undefined
@@ -54,6 +65,7 @@ export async function restorePurchases(): Promise<boolean> {
 export function listenForUpdates(
   onUpdate: (isPremium: boolean) => void,
 ): () => void {
+  if (!isConfigured) return () => {}
   const listener = (info: CustomerInfo) => {
     const isPremium = info.entitlements.active[ENTITLEMENT_ID] !== undefined
     onUpdate(isPremium)
@@ -66,6 +78,7 @@ export async function syncSubscriptionToDb(
   userId: string,
   isPremium: boolean,
 ): Promise<void> {
+  if (!isConfigured) return
   try {
     const info = await Purchases.getCustomerInfo()
     const expiration =

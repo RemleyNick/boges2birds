@@ -118,6 +118,7 @@ src/
 - [x] Sentry project setup (create project at sentry.io, add DSN to `.env`)
 - [x] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
 - [x] Set price for Premium membership in App Store Connect
+- [ ] Add Paywall UI to RevenueCat offering (required for `presentPaywallIfNeeded` to work)
 - [ ] First EAS preview build + device testing (`eas build --profile preview`)
 - [ ] Configure Sentry source map upload for production builds (org/project/auth token in EAS env)
 - [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)

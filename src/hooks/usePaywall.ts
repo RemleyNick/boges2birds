@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import RevenueCatUI from 'react-native-purchases-ui'
 
 import { useUserStore } from '@/store/userStore'
+import { isRevenueCatConfigured } from '@/services/subscriptions'
 
 const DEV_PREMIUM = __DEV__ && process.env.EXPO_PUBLIC_FORCE_PREMIUM === 'true'
 
@@ -11,6 +12,7 @@ export function usePaywall(): { showPaywall: () => Promise<boolean> } {
 
   async function showPaywall(): Promise<boolean> {
     if (DEV_PREMIUM) return true
+    if (!isRevenueCatConfigured()) return false
 
     try {
       const result = await RevenueCatUI.presentPaywallIfNeeded({

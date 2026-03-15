@@ -119,6 +119,7 @@ src/
 - [x] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
 - [x] Set price for Premium membership in App Store Connect
 - [ ] Add Paywall UI to RevenueCat offering (required for `presentPaywallIfNeeded` to work)
+- [ ] Link RevenueCat products to App Store Connect (product IDs `premium_yearly`/`premium_monthly` must match and be "Ready to Submit")
 - [ ] First EAS preview build + device testing (`eas build --profile preview`)
 - [ ] Configure Sentry source map upload for production builds (org/project/auth token in EAS env)
 - [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)

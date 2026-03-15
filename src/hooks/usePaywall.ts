@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import Purchases from 'react-native-purchases'
 import RevenueCatUI from 'react-native-purchases-ui'
 
 import { useUserStore } from '@/store/userStore'
@@ -15,6 +16,10 @@ export function usePaywall(): { showPaywall: () => Promise<boolean> } {
     if (!isRevenueCatConfigured()) return false
 
     try {
+      // Skip if no offerings are available (products not yet linked in App Store Connect)
+      const offerings = await Purchases.getOfferings()
+      if (!offerings.current) return false
+
       const result = await RevenueCatUI.presentPaywallIfNeeded({
         requiredEntitlementIdentifier: 'premium',
       })

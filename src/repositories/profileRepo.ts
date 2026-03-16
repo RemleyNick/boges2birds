@@ -3,6 +3,8 @@ import { db } from '@/db/client'
 import { users, skillAssessments, userPrograms, programs } from '@/db/schema'
 import type { User, SkillAssessment } from '@/db/schema'
 import { logSyncEntry } from './syncLogHelper'
+import { regeneratePendingSessions } from './trainingBlocksRepo'
+import type { ProgramSlug, WeeklyTime } from '@/types'
 
 export async function getUser(userId: string): Promise<User | undefined> {
   return db.select().from(users).where(eq(users.id, userId)).get()
@@ -67,4 +69,14 @@ export async function updateWeeklyTime(
     .set({ weeklyTimeAvailable: weeklyTime, updatedAt: new Date() })
     .where(eq(skillAssessments.id, latest.id))
   await logSyncEntry('skill_assessments', latest.id, 'update')
+
+  // Regenerate pending sessions with the new time budget
+  const activeProgram = await getActiveUserProgram(userId)
+  if (activeProgram) {
+    await regeneratePendingSessions(
+      userId,
+      weeklyTime as WeeklyTime,
+      activeProgram.programSlug as ProgramSlug,
+    )
+  }
 }

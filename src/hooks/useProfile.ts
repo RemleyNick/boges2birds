@@ -47,6 +47,7 @@ export function useUpdateWeeklyTime(userId: string) {
     mutationFn: (time: string) => updateWeeklyTime(userId, time),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['latest-assessment', userId] })
+      queryClient.invalidateQueries({ queryKey: ['active-block', userId] })
     },
   })
 }

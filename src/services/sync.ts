@@ -47,6 +47,10 @@ function toSupabasePayload(row: Record<string, unknown>): Record<string, unknown
   return payload
 }
 
+// Subscription fields are managed by RevenueCat (via service_role webhook), not the client.
+// Strip them from users upserts as defense in depth (server trigger also protects).
+const USERS_PROTECTED_FIELDS = ['subscription_status', 'subscription_expires_at', 'revenuecat_customer_id']
+
 const BATCH_SIZE = 50
 
 /**
@@ -117,6 +121,14 @@ async function processEntry(
         if (error) throw error
       } else {
         const payload = toSupabasePayload(row as Record<string, unknown>)
+
+        // Strip subscription fields from users — only service_role should write these
+        if (entry.tableName === 'users') {
+          for (const field of USERS_PROTECTED_FIELDS) {
+            delete payload[field]
+          }
+        }
+
         const { error } = await client
           .from(mapping.supabaseTable)
           .upsert(payload, { onConflict: 'id' })

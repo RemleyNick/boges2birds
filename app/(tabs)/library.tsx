@@ -6,10 +6,13 @@ import { colors } from '@/constants/colors'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useDrills } from '@/hooks/useDrills'
+import { ARTICLE_SEEDS } from '@/engine/articleSeeds'
 import type { DrillRow } from '@/db/schema'
-import type { SkillArea } from '@/types'
+import type { SkillArea, Article, ArticleCategory } from '@/types'
 
 type FilterOption = 'all' | SkillArea
+type ArticleFilterOption = 'all' | ArticleCategory
+type ActiveTab = 'drills' | 'articles'
 
 const FILTERS: { key: FilterOption; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -20,26 +23,53 @@ const FILTERS: { key: FilterOption; label: string }[] = [
   { key: 'courseMgmt', label: 'Course Mgmt' },
 ]
 
+const ARTICLE_FILTERS: { key: ArticleFilterOption; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'courseManagement', label: 'Course Mgmt' },
+  { key: 'mindset', label: 'Mindset' },
+  { key: 'statistics', label: 'Statistics' },
+  { key: 'strategy', label: 'Strategy' },
+]
+
 const PROGRAM_LABELS: Record<string, string> = {
   break100: '100',
   break90: '90',
   break80: '80',
 }
 
+const CATEGORY_LABELS: Record<ArticleCategory, string> = {
+  courseManagement: 'Course Mgmt',
+  mindset: 'Mindset',
+  statistics: 'Statistics',
+  strategy: 'Strategy',
+}
+
 export default function LibraryScreen() {
   const { data: allDrills = [], isLoading } = useDrills()
   const { isPremium } = useEntitlement()
   const { showPaywall } = usePaywall()
+  const [activeTab, setActiveTab] = useState<ActiveTab>('drills')
   const [activeFilter, setActiveFilter] = useState<FilterOption>('all')
+  const [articleFilter, setArticleFilter] = useState<ArticleFilterOption>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedArticleId, setExpandedArticleId] = useState<string | null>(null)
 
-  const filtered =
+  const filteredDrills =
     activeFilter === 'all'
       ? allDrills
       : allDrills.filter((d) => d.skillArea === activeFilter)
 
+  const filteredArticles =
+    articleFilter === 'all'
+      ? ARTICLE_SEEDS
+      : ARTICLE_SEEDS.filter((a) => a.category === articleFilter)
+
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? null : id))
+  }
+
+  function toggleArticleExpand(id: string) {
+    setExpandedArticleId((prev) => (prev === id ? null : id))
   }
 
   function renderDrill({ item }: { item: DrillRow }) {
@@ -75,14 +105,37 @@ export default function LibraryScreen() {
     )
   }
 
+  function renderArticle({ item }: { item: Article }) {
+    const isExpanded = expandedArticleId === item.id
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => toggleArticleExpand(item.id)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.drillName} numberOfLines={2}>{item.title}</Text>
+        <View style={styles.badgeRow}>
+          <View style={styles.skillBadge}>
+            <Text style={styles.skillBadgeText}>
+              {CATEGORY_LABELS[item.category]}
+            </Text>
+          </View>
+        </View>
+        {isExpanded && (
+          <Text style={styles.instructions}>{item.body}</Text>
+        )}
+      </TouchableOpacity>
+    )
+  }
+
   if (!isPremium) {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.lockedContainer}>
           <Text style={styles.lockedIcon}>{'\u{1F512}'}</Text>
-          <Text style={styles.lockedTitle}>Browse Drills with Premium</Text>
+          <Text style={styles.lockedTitle}>Browse Drills & Articles with Premium</Text>
           <Text style={styles.lockedBody}>
-            Access the full drill library to level up your game.
+            Access the full drill library and golf articles to level up your game.
           </Text>
           <TouchableOpacity style={styles.upgradeButton} onPress={() => showPaywall()}>
             <Text style={styles.upgradeButtonText}>Upgrade</Text>
@@ -103,41 +156,96 @@ export default function LibraryScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.headerArea}>
-        <Text style={styles.heading}>Drill Library</Text>
-        <FlatList
-          horizontal
-          data={FILTERS}
-          keyExtractor={(f) => f.key}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-          renderItem={({ item: f }) => (
-            <TouchableOpacity
-              style={[styles.pill, activeFilter === f.key && styles.pillActive]}
-              onPress={() => setActiveFilter(f.key)}
-            >
-              <Text style={[styles.pillText, activeFilter === f.key && styles.pillTextActive]}>
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-      </View>
-      <FlatList
-        data={filtered}
-        keyExtractor={(d) => d.id}
-        renderItem={renderDrill}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No drills found</Text>
-            <Text style={styles.emptyBody}>
-              {activeFilter === 'all'
-                ? 'Drills will appear here once your plan is generated.'
-                : 'Try selecting a different skill area.'}
+        <Text style={styles.heading}>Library</Text>
+        <View style={styles.toggleRow}>
+          <TouchableOpacity
+            style={[styles.togglePill, activeTab === 'drills' && styles.togglePillActive]}
+            onPress={() => setActiveTab('drills')}
+          >
+            <Text style={[styles.toggleText, activeTab === 'drills' && styles.toggleTextActive]}>
+              Practice Drills
             </Text>
-          </View>
-        }
-      />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.togglePill, activeTab === 'articles' && styles.togglePillActive]}
+            onPress={() => setActiveTab('articles')}
+          >
+            <Text style={[styles.toggleText, activeTab === 'articles' && styles.toggleTextActive]}>
+              Golf Articles
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {activeTab === 'drills' ? (
+          <FlatList
+            horizontal
+            data={FILTERS}
+            keyExtractor={(f) => f.key}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+            renderItem={({ item: f }) => (
+              <TouchableOpacity
+                style={[styles.pill, activeFilter === f.key && styles.pillActive]}
+                onPress={() => setActiveFilter(f.key)}
+              >
+                <Text style={[styles.pillText, activeFilter === f.key && styles.pillTextActive]}>
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        ) : (
+          <FlatList
+            horizontal
+            data={ARTICLE_FILTERS}
+            keyExtractor={(f) => f.key}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+            renderItem={({ item: f }) => (
+              <TouchableOpacity
+                style={[styles.pill, articleFilter === f.key && styles.pillActive]}
+                onPress={() => setArticleFilter(f.key)}
+              >
+                <Text style={[styles.pillText, articleFilter === f.key && styles.pillTextActive]}>
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
+      {activeTab === 'drills' ? (
+        <FlatList
+          data={filteredDrills}
+          keyExtractor={(d) => d.id}
+          renderItem={renderDrill}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No drills found</Text>
+              <Text style={styles.emptyBody}>
+                {activeFilter === 'all'
+                  ? 'Drills will appear here once your plan is generated.'
+                  : 'Try selecting a different skill area.'}
+              </Text>
+            </View>
+          }
+        />
+      ) : (
+        <FlatList
+          data={filteredArticles}
+          keyExtractor={(a) => a.id}
+          renderItem={renderArticle}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>No articles found</Text>
+              <Text style={styles.emptyBody}>
+                Try selecting a different category.
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -160,6 +268,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  togglePill: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  togglePillActive: {
+    backgroundColor: colors.accent,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  toggleTextActive: {
+    color: '#FFFFFF',
   },
   filterRow: {
     gap: 8,

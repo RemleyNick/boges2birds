@@ -63,3 +63,12 @@ export interface DrillAllocation {
   durationOverride: number | null
   shotCountOverride: number | null
 }
+
+export type ArticleCategory = 'courseManagement' | 'mindset' | 'statistics' | 'strategy'
+
+export interface Article {
+  id: string
+  title: string
+  body: string
+  category: ArticleCategory
+}

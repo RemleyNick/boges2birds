@@ -1,3 +1,4 @@
+import { Alert } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import Purchases from 'react-native-purchases'
 import RevenueCatUI from 'react-native-purchases-ui'
@@ -13,18 +14,30 @@ export function usePaywall(): { showPaywall: () => Promise<boolean> } {
 
   async function showPaywall(): Promise<boolean> {
     if (DEV_PREMIUM) return true
-    if (!isRevenueCatConfigured()) return false
+
+    if (!isRevenueCatConfigured()) {
+      Alert.alert(
+        'Purchases Unavailable',
+        'In-app purchases are not available on this device. Please try again from a production build.',
+      )
+      return false
+    }
 
     try {
-      // Skip if no offerings are available (products not yet linked in App Store Connect)
       const offerings = await Purchases.getOfferings()
-      if (!offerings.current) return false
+
+      if (!offerings.current) {
+        Alert.alert(
+          'Unable to Load',
+          'Subscription options could not be loaded. Please check your connection and try again.',
+        )
+        return false
+      }
 
       const result = await RevenueCatUI.presentPaywallIfNeeded({
         requiredEntitlementIdentifier: 'premium',
       })
 
-      // PURCHASED = user bought, RESTORED = user restored
       const purchased =
         result === 'PURCHASED' || result === 'RESTORED'
 
@@ -34,8 +47,11 @@ export function usePaywall(): { showPaywall: () => Promise<boolean> } {
 
       return purchased
     } catch (e) {
-      // Graceful fallback for Expo Go / missing native module
       console.warn('[Paywall] presentPaywall failed:', e)
+      Alert.alert(
+        'Something Went Wrong',
+        'We couldn\u2019t open the upgrade screen. Please try again later.',
+      )
       return false
     }
   }

@@ -118,9 +118,9 @@ src/
 - [x] Sentry project setup (create project at sentry.io, add DSN to `.env`)
 - [x] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
 - [x] Set price for Premium membership in App Store Connect
-- [ ] Add Paywall UI to RevenueCat offering (required for `presentPaywallIfNeeded` to work)
-- [ ] Link RevenueCat products to App Store Connect (product IDs `premium_yearly`/`premium_monthly` must match and be "Ready to Submit")
-- [ ] First EAS preview build + device testing (`eas build --profile preview`)
+- [x] Add Paywall UI to RevenueCat offering (required for `presentPaywallIfNeeded` to work)
+- [x] Link RevenueCat products to App Store Connect (product IDs `premium_yearly`/`premium_monthly` must match and be "Ready to Submit")
+- [x] First EAS preview build + device testing (`eas build --profile preview`)
 - [ ] Configure Sentry source map upload for production builds (org/project/auth token in EAS env)
 - [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)
 - [ ] Update App Store link in landing page (`docs/index.html` — replace `href="#"` on the App Store badge once the app is live)

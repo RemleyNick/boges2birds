@@ -22,6 +22,8 @@ import { ActivityIndicator, AppState, View } from 'react-native'
 import { Stack } from 'expo-router'
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { PaywallModal } from '@/components/PaywallModal'
+import { usePaywallStore } from '@/store/paywallStore'
 import { runMigrations } from '@/db/migrate'
 import { seedSystemDrills } from '@/db/seedDrills'
 import { getOrCreateGuestUser, getOrCreateAuthUser } from '@/repositories/usersRepo'
@@ -33,6 +35,7 @@ import { useUserStore } from '@/store/userStore'
 export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false)
   const queryClient = useRef(new QueryClient()).current
+  const { visible: paywallVisible, dismiss: dismissPaywall } = usePaywallStore()
 
   useEffect(() => {
     async function init() {
@@ -119,6 +122,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="practice/[sessionId]" />
         </Stack>
+        <PaywallModal visible={paywallVisible} onClose={dismissPaywall} />
       </QueryClientProvider>
     </ErrorBoundary>
   )

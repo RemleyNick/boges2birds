@@ -1,10 +1,10 @@
 import { Alert } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import Purchases from 'react-native-purchases'
-import RevenueCatUI from 'react-native-purchases-ui'
 
 import { useUserStore } from '@/store/userStore'
 import { isRevenueCatConfigured } from '@/services/subscriptions'
+import { usePaywallStore } from '@/store/paywallStore'
 
 const DEV_PREMIUM = __DEV__ && process.env.EXPO_PUBLIC_FORCE_PREMIUM === 'true'
 
@@ -34,12 +34,7 @@ export function usePaywall(): { showPaywall: () => Promise<boolean> } {
         return false
       }
 
-      const result = await RevenueCatUI.presentPaywallIfNeeded({
-        requiredEntitlementIdentifier: 'premium',
-      })
-
-      const purchased =
-        result === 'PURCHASED' || result === 'RESTORED'
+      const purchased = await usePaywallStore.getState().showPaywall()
 
       if (purchased) {
         queryClient.invalidateQueries({ queryKey: ['entitlement', userId] })

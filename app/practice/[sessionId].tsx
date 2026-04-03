@@ -125,7 +125,7 @@ export default function PracticeScreen() {
             {SKILL_LABELS[session.primarySkill as SkillArea]}
           </Text>
           <Text style={styles.headerMeta}>
-            {session.durationMinutes} min &middot; {session.sessionType}
+            {session.durationMinutes} min
           </Text>
         </View>
       </View>

@@ -1,5 +1,5 @@
 import type { Drill, ProgramSlug, SkillArea } from '@/types'
-import { MIN_PER_SHOT } from './thresholds'
+import { MIN_DRILL_DURATION, MIN_PER_SHOT } from './thresholds'
 
 export interface SelectedDrill {
   drill: Drill
@@ -10,8 +10,9 @@ export interface SelectedDrill {
 /**
  * Given a session's primarySkill + program + duration, pick 1–3 appropriate
  * drills from the pool. Filters by skill area and compatible program, then
- * fills time without going over. When a drill doesn't fit at full size,
- * scales its shot count down to fit the remaining budget.
+ * distributes time evenly across drills so no drill receives less than
+ * MIN_DRILL_DURATION minutes. When a drill's allocated time is less than its
+ * natural duration, scales its shot count down proportionally.
  */
 export function selectDrills(
   primarySkill: SkillArea,
@@ -28,44 +29,28 @@ export function selectDrills(
   const sorted = [...candidates].sort((a, b) => a.id.localeCompare(b.id))
   const rate = MIN_PER_SHOT[primarySkill]
 
-  const selected: SelectedDrill[] = []
-  let remaining = durationMinutes
+  // Pre-determine how many drills to use: at least 1, at most 3,
+  // capped so each drill receives at least MIN_DRILL_DURATION minutes.
+  const numDrills = Math.max(
+    1,
+    Math.min(3, sorted.length, Math.floor(durationMinutes / MIN_DRILL_DURATION)),
+  )
+  const chosen = sorted.slice(0, numDrills)
 
-  for (const drill of sorted) {
-    if (selected.length >= 3) break
-    if (remaining <= 0) break
+  // Distribute time evenly — give any remainder to the first drill
+  const baseTime = Math.floor(durationMinutes / numDrills)
+  const remainder = durationMinutes - baseTime * numDrills
 
-    if (drill.durationMinutes <= remaining) {
-      // Drill fits fully — no scaling needed
-      selected.push({ drill, durationOverride: null, shotCountOverride: null })
-      remaining -= drill.durationMinutes
-    } else if (selected.length === 0 || remaining >= rate) {
-      // Drill doesn't fit fully — scale it down
-      const scaledShots = Math.max(1, Math.floor(remaining / rate))
-      const scaledDuration = Math.round(scaledShots * rate)
-      selected.push({
-        drill,
-        durationOverride: scaledDuration,
-        shotCountOverride: scaledShots,
-      })
-      remaining -= scaledDuration
+  return chosen.map((drill, i) => {
+    const allocated = baseTime + (i === 0 ? remainder : 0)
+
+    if (allocated >= drill.durationMinutes) {
+      // Budget meets or exceeds this drill's natural duration — no scaling needed
+      return { drill, durationOverride: null, shotCountOverride: null }
     }
-  }
 
-  // If nothing was selected (empty candidates already handled above),
-  // pick the shortest drill and scale it
-  if (selected.length === 0 && sorted.length > 0) {
-    const shortest = sorted.reduce((min, d) =>
-      d.durationMinutes < min.durationMinutes ? d : min,
-    )
-    const scaledShots = Math.max(1, Math.floor(durationMinutes / rate))
-    const scaledDuration = Math.round(scaledShots * rate)
-    selected.push({
-      drill: shortest,
-      durationOverride: scaledDuration,
-      shotCountOverride: scaledShots,
-    })
-  }
-
-  return selected
+    // Scale down to fit allocated time
+    const scaledShots = Math.max(1, Math.round(allocated / rate))
+    return { drill, durationOverride: allocated, shotCountOverride: scaledShots }
+  })
 }

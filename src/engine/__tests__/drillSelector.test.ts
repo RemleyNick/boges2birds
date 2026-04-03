@@ -35,15 +35,19 @@ describe('selectDrills', () => {
     expect(result[0].durationOverride!).toBeLessThanOrEqual(5)
   })
 
-  it('scales partial-fit drill after full-fit drill', () => {
-    // shortGame break90 has: short-01 (20min), short-02 (15min), short-03 (12min), short-04 (10min)
-    // With 25 min budget: short-01 doesn't fit, short-02 doesn't fit, short-03 (12) fits, then 13 remaining
-    // Actually sorted by id: short-01, short-02, short-03, short-04
-    // short-01 (20) fits in 25 → remaining 5, then short-02 (15) doesn't fit fully → scale
+  it('distributes time evenly across drills', () => {
+    // shortGame break90, 25 min budget: numDrills = min(3, candidates, floor(25/5)=5) = 3
+    // Even split: 8 + 1 remainder = 9 min for first, 8 min each for rest
+    // All natural durations (20, 15, 12) exceed 9/8 min → all drills are scaled
     const result = selectDrills('shortGame', 'break90', 25, DRILL_SEEDS)
-    expect(result.length).toBeGreaterThanOrEqual(1)
-    // First drill should fit fully
-    expect(result[0].durationOverride).toBeNull()
+    expect(result).toHaveLength(3)
+    // All drills should be scaled (allocated < natural duration)
+    for (const sd of result) {
+      expect(sd.durationOverride).not.toBeNull()
+    }
+    // Total allocated time should equal session budget
+    const total = result.reduce((sum, sd) => sum + sd.durationOverride!, 0)
+    expect(total).toBe(25)
   })
 
   it('returns at most 3 drills', () => {
@@ -56,5 +60,20 @@ describe('selectDrills', () => {
     const result = selectDrills('teeShot', 'break100', 1, DRILL_SEEDS)
     expect(result).toHaveLength(1)
     expect(result[0].shotCountOverride).toBeGreaterThanOrEqual(1)
+  })
+
+  it('splits time evenly so no drill gets a tiny sliver', () => {
+    // Regression: 21-min short_game previously produced 20 min + 1 min split
+    const result = selectDrills('shortGame', 'break100', 21, DRILL_SEEDS)
+    expect(result.length).toBeGreaterThan(1)
+    for (const sd of result) {
+      const dur = sd.durationOverride ?? sd.drill.durationMinutes
+      expect(dur).toBeGreaterThanOrEqual(5)
+    }
+    // No drill should receive more than 3× the time of the shortest
+    const durations = result.map((sd) => sd.durationOverride ?? sd.drill.durationMinutes)
+    const maxDur = Math.max(...durations)
+    const minDur = Math.min(...durations)
+    expect(maxDur / minDur).toBeLessThan(3)
   })
 })

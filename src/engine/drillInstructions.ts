@@ -19,7 +19,7 @@ interface DrillLike {
 const DRILL_TEMPLATES: Record<string, (n: number) => string> = {
   // ─── Driving (Simple) ───────────────────────────────────────────────────
   'drive-01': (n) =>
-    `Place two alignment sticks on the ground: one pointing at the target, one across your toes. Hit ${n} drives focusing on staying aligned. Check divot direction after each shot.`,
+    `Place two alignment sticks on the ground: one pointing at the target, one across your toes. Hit ${n} drives focusing on staying aligned with your hips and shoulders.`,
 
   // ─── Driving (Ratio: 70%) ──────────────────────────────────────────────
   'drive-02': (n) => {
@@ -36,19 +36,19 @@ const DRILL_TEMPLATES: Record<string, (n: number) => string> = {
   // ─── Driving (Sub-group: 3 tee heights) ────────────────────────────────
   'drive-04': (n) => {
     const perGroup = Math.max(1, Math.floor(n / 3))
-    return `Hit ${perGroup} balls each at low, medium, and high tee heights. Notice ball flight changes. Identify which height produces your most consistent contact.`
+    return `Hit ${n} balls with low, medium, and high tee heights. Notice ball flight changes. Identify which height produces your most consistent contact.`
   },
 
   // ─── Driving (Simple) ──────────────────────────────────────────────────
   'drive-05': (n) =>
-    `Build a 30-second pre-shot routine: 2 practice swings, visualize shot, step in, one look, go. Hit ${n} drives using the exact same routine for each. Consistency over power.`,
+    `Build a consistent pre-shot routine: practice swing, visualize shot, step in, look at target, go. Hit ${n} drives using the exact same routine for each.`,
 
   // ─── Irons (Simple) ────────────────────────────────────────────────────
   'iron-01': (n) =>
-    `Place towel or impact bag just behind ball position. Hit ${n} iron shots ensuring no contact with towel. Promotes ball-first contact. Move down one club if struggling.`,
+    `Place towel just behind ball position. Hit ${n} iron shots ensuring no contact with towel. Promotes ball-first contact. Move down one club if struggling.`,
 
   'iron-02': (n) =>
-    `Pick a target at 100 yards. Hit ${n} shots with your 7-iron. Track how many land within 20 yards of target. Focus on solid contact before worrying about distance control.`,
+    `Pick a target at your 7-iron distance. Hit ${n} shots. Track how many land within 20 yards of target. Focus on solid contact before worrying about distance control.`,
 
   'iron-03': (n) =>
     `Choose your most comfortable mid-iron (6 or 7). Hit ${n} balls at the same target. Build a repeatable stock swing: same grip, stance, tempo every time. This becomes your bread-and-butter.`,
@@ -130,7 +130,7 @@ const DRILL_TEMPLATES: Record<string, (n: number) => string> = {
     `Spend 30 minutes hitting ${n} shots only from 100 yards and in. These are your "scoring opportunities." Practice different lies, angles, and trajectories. Track attempts vs. results within 10 feet.`,
 
   'mgmt-05': (n) =>
-    `Before each of ${n} shots, answer: "What is the worst outcome if I miss?" If the answer is a lost ball or OB, take a safer club. Practice verbally saying "safe side" before each swing.`,
+    `For ${n} shots, ask: "What is the worst outcome if I miss this shot?" If the answer is a lost ball or OB, take a safer club. Practice tee shots with 3-wood or hybrid.`,
 }
 
 /**

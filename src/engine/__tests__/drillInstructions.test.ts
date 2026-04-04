@@ -72,7 +72,7 @@ describe('resolveInstructions', () => {
     const drill = getDrill('drive-04') // shotCount 12, 4 each
     const result = resolveInstructions(drill, 6)
     // Math.floor(6 / 3) = 2
-    expect(result).toContain('Hit 2 balls each')
+    expect(result).toContain('Hit 6 balls with')
   })
 
   it('sub-group drill: iron-04 (4 distances)', () => {

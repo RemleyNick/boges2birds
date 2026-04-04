@@ -11,7 +11,7 @@ export const DRILL_SEEDS: Drill[] = [
     shotCount: 10,
     programSlugs: ['break100', 'break90', 'break80'],
     instructions:
-      'Place two alignment sticks on the ground: one pointing at the target, one across your toes. Hit 10 drives focusing on staying aligned. Check divot direction after each shot.',
+      'Place two alignment sticks on the ground: one pointing at the target, one across your toes. Hit 10 drives focusing on staying aligned with your hips and shoulders.',
   },
   {
     id: 'drive-02',
@@ -44,7 +44,7 @@ export const DRILL_SEEDS: Drill[] = [
     shotCount: 12,
     programSlugs: ['break100'],
     instructions:
-      'Hit 4 balls each at low, medium, and high tee heights. Notice ball flight changes. Identify which height produces your most consistent contact.',
+      'Hit balls with low, medium, and high tee heights. Notice ball flight changes. Identify which height produces your most consistent contact.',
   },
   {
     id: 'drive-05',
@@ -55,7 +55,7 @@ export const DRILL_SEEDS: Drill[] = [
     shotCount: 12,
     programSlugs: ['break80'],
     instructions:
-      'Build a 30-second pre-shot routine: 2 practice swings, visualize shot, step in, one look, go. Hit 12 drives using the exact same routine for each. Consistency over power.',
+      'Build a consistent pre-shot routine: practice swing, visualize shot, step in, look at target, go. Hit 12 drives using the exact same routine for each.',
   },
 
   // ─── Irons ────────────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ export const DRILL_SEEDS: Drill[] = [
     shotCount: 16,
     programSlugs: ['break100', 'break90', 'break80'],
     instructions:
-      'Place towel or impact bag just behind ball position. Hit 16 iron shots ensuring no contact with towel. Promotes ball-first contact. Move down one club if struggling.',
+      'Place towel just behind ball position. Hit 16 iron shots ensuring no contact with towel. Promotes ball-first contact. Move down one club if struggling.',
   },
   {
     id: 'iron-02',
@@ -79,7 +79,7 @@ export const DRILL_SEEDS: Drill[] = [
     shotCount: 12,
     programSlugs: ['break100', 'break90'],
     instructions:
-      'Pick a target at 100 yards. Hit 12 shots with your 7-iron. Track how many land within 20 yards of target. Focus on solid contact before worrying about distance control.',
+      'Pick a target at your 7-iron distance. Hit 12 shots. Track how many land within 20 yards of target. Focus on solid contact before worrying about distance control.',
   },
   {
     id: 'iron-03',
@@ -283,6 +283,6 @@ export const DRILL_SEEDS: Drill[] = [
     shotCount: 10,
     programSlugs: ['break100'],
     instructions:
-      'Before each of 10 shots, answer: "What is the worst outcome if I miss?" If the answer is a lost ball or OB, take a safer club. Practice verbally saying "safe side" before each swing.',
+      '"What is the worst outcome if I miss this shot?" If the answer is a lost ball or OB, take a safer club. Practice tee shots with 3-wood or hybrid.',
   },
 ]

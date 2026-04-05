@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { colors } from '@/constants/colors'
 import { resolveInstructions } from '@/engine/drillInstructions'
@@ -100,7 +101,7 @@ export default function PracticeScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.lockedOverlay}>
-          <Text style={styles.lockedIcon}>{'\u{1F512}'}</Text>
+          <Ionicons name="lock-closed" size={48} color={colors.textSubtle} style={styles.lockedIcon} />
           <Text style={styles.lockedTitle}>Premium Content</Text>
           <Text style={styles.lockedBody}>
             Upgrade to Premium to access weeks 2–4 of your training plan.
@@ -345,7 +346,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   lockedIcon: {
-    fontSize: 48,
     marginBottom: 4,
   },
   lockedTitle: {

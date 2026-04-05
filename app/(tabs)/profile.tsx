@@ -11,7 +11,9 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
+import { Button, Card, Pill } from '@/components/ui'
 import { colors } from '@/constants/colors'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
@@ -67,15 +69,12 @@ export default function ProfileScreen() {
   const updateName = useUpdateDisplayName(userId ?? '')
   const updateTime = useUpdateWeeklyTime(userId ?? '')
 
-  // Name editing state
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
 
-  // Weekly time editing state
   const [editingTime, setEditingTime] = useState(false)
   const [selectedTime, setSelectedTime] = useState<WeeklyTime | null>(null)
 
-  // Round stats (computed)
   const roundStats = useMemo(() => {
     if (roundLogs.length === 0) return null
     const scores = roundLogs.map((r) => r.totalScore)
@@ -125,9 +124,12 @@ export default function ProfileScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.heading}>Profile</Text>
           <Text style={styles.cardValueMuted}>Failed to load profile.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
+          <Button
+            title="Retry"
+            onPress={() => refetch()}
+            fullWidth={false}
+            style={{ marginTop: 8 }}
+          />
         </View>
       </SafeAreaView>
     )
@@ -142,7 +144,7 @@ export default function ProfileScreen() {
         <Text style={styles.heading}>Profile</Text>
 
         {/* ─── Identity Card ──────────────────────────────── */}
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>Identity</Text>
           {editingName ? (
             <View style={styles.nameEditRow}>
@@ -156,12 +158,12 @@ export default function ProfileScreen() {
                 returnKeyType="done"
                 onSubmitEditing={saveName}
               />
-              <TouchableOpacity style={styles.saveBtn} onPress={saveName}>
+              <TouchableOpacity style={styles.saveBtn} onPress={saveName} activeOpacity={0.7}>
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity onPress={startEditName} activeOpacity={0.6}>
+            <TouchableOpacity onPress={startEditName} activeOpacity={0.7}>
               <Text style={styles.nameDisplay} numberOfLines={1}>
                 {user?.displayName || 'Tap to set name'}
               </Text>
@@ -181,9 +183,7 @@ export default function ProfileScreen() {
           )}
           {!isPremium && (
             <View style={styles.upgradeRow}>
-              <TouchableOpacity style={styles.upgradeButton} onPress={() => showPaywall()}>
-                <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
-              </TouchableOpacity>
+              <Button title="Upgrade to Premium" onPress={() => showPaywall()} />
               <TouchableOpacity
                 style={styles.restoreLink}
                 onPress={async () => {
@@ -192,15 +192,16 @@ export default function ProfileScreen() {
                     Alert.alert('No purchases found', 'We couldn\'t find an active subscription to restore.')
                   }
                 }}
+                activeOpacity={0.7}
               >
                 <Text style={styles.restoreLinkText}>Restore Purchases</Text>
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </Card>
 
         {/* ─── Program Card ───────────────────────────────── */}
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>Program</Text>
           {activeProgram ? (
             <Text style={styles.cardValue} numberOfLines={1}>
@@ -212,15 +213,15 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.actionRow}
             onPress={() => router.push('/(onboarding)/program-select?context=change')}
-            activeOpacity={0.6}
+            activeOpacity={0.7}
           >
             <Text style={styles.actionText}>Change program</Text>
-            <Text style={styles.actionChevron}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.accent} />
           </TouchableOpacity>
-        </View>
+        </Card>
 
         {/* ─── Skill Ratings Card ─────────────────────────── */}
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>Skill Ratings</Text>
           {assessment ? (
             <View style={styles.skillList}>
@@ -244,41 +245,36 @@ export default function ProfileScreen() {
             onPress={() =>
               router.push('/(onboarding)/baseline-assessment?context=reassess')
             }
-            activeOpacity={0.6}
+            activeOpacity={0.7}
           >
             <Text style={styles.actionText}>Re-assess</Text>
-            <Text style={styles.actionChevron}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.accent} />
           </TouchableOpacity>
-        </View>
+        </Card>
 
         {/* ─── Weekly Time Card ───────────────────────────── */}
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>Weekly Practice Time</Text>
           {editingTime ? (
             <>
               <View style={styles.pillRow}>
-                {WEEKLY_TIMES.map((t) => {
-                  const active = selectedTime === t.value
-                  return (
-                    <TouchableOpacity
-                      key={t.value}
-                      style={[styles.pill, active && styles.pillActive]}
-                      onPress={() => setSelectedTime(t.value)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.pillText, active && styles.pillTextActive]}>
-                        {t.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
+                {WEEKLY_TIMES.map((t) => (
+                  <Pill
+                    key={t.value}
+                    label={t.label}
+                    selected={selectedTime === t.value}
+                    onPress={() => setSelectedTime(t.value)}
+                  />
+                ))}
               </View>
-              <TouchableOpacity style={styles.saveTimeBtn} onPress={saveTime}>
-                <Text style={styles.saveTimeBtnText}>Save</Text>
-              </TouchableOpacity>
+              <Button
+                title="Save"
+                onPress={saveTime}
+                style={{ marginTop: 12, paddingVertical: 12 }}
+              />
             </>
           ) : (
-            <TouchableOpacity onPress={startEditTime} activeOpacity={0.6}>
+            <TouchableOpacity onPress={startEditTime} activeOpacity={0.7}>
               <Text style={styles.cardValue}>
                 {assessment?.weeklyTimeAvailable
                   ? WEEKLY_TIMES.find((t) => t.value === assessment.weeklyTimeAvailable)
@@ -288,10 +284,10 @@ export default function ProfileScreen() {
               <Text style={styles.tapHint}>Tap to change</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </Card>
 
         {/* ─── Round Stats Card ───────────────────────────── */}
-        <View style={styles.card}>
+        <Card>
           <Text style={styles.cardTitle}>Round Stats</Text>
           {roundStats ? (
             <View style={styles.statsRow}>
@@ -311,17 +307,17 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.cardValueMuted}>No rounds logged yet</Text>
           )}
-        </View>
+        </Card>
 
         {/* ─── Account Actions ────────────────────────────── */}
         {isGuest ? (
           <TouchableOpacity
             style={styles.accountRow}
             onPress={() => router.push('/(auth)/sign-up')}
-            activeOpacity={0.6}
+            activeOpacity={0.7}
           >
             <Text style={styles.createAccountText}>Create Account</Text>
-            <Text style={[styles.actionChevron, { color: colors.accent }]}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.accent} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -330,7 +326,7 @@ export default function ProfileScreen() {
               await signOut()
               router.replace('/')
             }}
-            activeOpacity={0.6}
+            activeOpacity={0.7}
           >
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
@@ -358,13 +354,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
-  },
-
-  // Card
-  card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    padding: 16,
   },
   cardTitle: {
     fontSize: 13,
@@ -447,10 +436,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.accent,
   },
-  actionChevron: {
-    fontSize: 20,
-    color: colors.accent,
-  },
 
   // Skills
   skillList: {
@@ -476,35 +461,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  pill: {
-    backgroundColor: colors.pillInactive,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  pillActive: {
-    backgroundColor: colors.accent,
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  pillTextActive: {
-    color: '#FFFFFF',
-  },
-  saveTimeBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  saveTimeBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   tapHint: {
     fontSize: 12,
@@ -568,19 +524,6 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'center',
   },
-  upgradeButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-  },
-  upgradeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
   restoreLink: {
     paddingVertical: 4,
   },
@@ -597,17 +540,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     gap: 12,
-  },
-  retryButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    marginTop: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
   },
 })

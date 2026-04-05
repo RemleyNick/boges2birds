@@ -1,10 +1,13 @@
 import { LilitaOne_400Regular, useFonts as useLilita } from "@expo-google-fonts/lilita-one";
-import { DancingScript_600SemiBold, useFonts as useDancing } from "@expo-google-fonts/dancing-script";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui";
+import { colors } from "@/constants/colors";
+import { FONT, SPACING } from "@/constants/tokens";
 import { useUserStore } from "@/store/userStore";
 
 export default function WelcomeScreen() {
@@ -13,7 +16,6 @@ export default function WelcomeScreen() {
   const isGuest = useUserStore((s) => s.isGuest);
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular });
-  const [dancingLoaded] = useDancing({ DancingScript_600SemiBold });
 
   // Redirect authenticated users straight to tabs
   useEffect(() => {
@@ -22,123 +24,110 @@ export default function WelcomeScreen() {
     }
   }, [isAuthReady, isGuest]);
 
-  if (!lilitaLoaded || !dancingLoaded) return null;
+  if (!lilitaLoaded) return null;
 
   return (
-    <ImageBackground
-      source={require("../assets/images/bg-welcome.jpg")}
-      style={styles.root}
-      resizeMode="cover"
-    >
-      <View style={styles.overlay} />
+    <SafeAreaView style={styles.root}>
+      {/* Soft mint wash behind the hero — approximates a gradient without adding a dep */}
+      <View style={styles.mintWash} pointerEvents="none" />
 
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.inner}>
-
-          {/* Brand */}
-          <View style={styles.brandSection}>
-            <Text style={styles.preTitle}>Turn your</Text>
-            <Text style={styles.appName}>Boges2Birds!</Text>
-            <Text style={styles.tagline}>Your personal path to breaking par.</Text>
+      <View style={styles.inner}>
+        <View style={styles.hero}>
+          <View style={styles.iconBadge}>
+            <Ionicons name="golf" size={56} color={colors.accent} />
           </View>
-
-          {/* CTA */}
-          <View style={styles.bottomSection}>
-            <TouchableOpacity
-              onPress={() => router.push("/(onboarding)/program-select")}
-              style={styles.ctaButton}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.ctaText}>Get Started</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push("/(auth)/sign-in")}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.signInText}>
-                Already have an account? <Text style={styles.signInLink}>Sign In</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-
+          <Text style={styles.appName}>Boges2Birds</Text>
+          <Text style={styles.tagline}>Turn bogeys into birdies.</Text>
         </View>
-      </SafeAreaView>
-    </ImageBackground>
+
+        <View style={styles.bottomSection}>
+          <Button
+            title="Get Started"
+            onPress={() => router.push("/(onboarding)/program-select")}
+          />
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/sign-in")}
+            activeOpacity={0.7}
+            style={styles.signInBtn}
+          >
+            <Text style={styles.signInText}>
+              Already have an account? <Text style={styles.signInLink}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.42)",
+  mintWash: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "62%",
+    backgroundColor: colors.accentLight,
+    borderBottomLeftRadius: 220,
+    borderBottomRightRadius: 220,
+    transform: [{ scaleX: 1.4 }],
   },
   inner: {
     flex: 1,
-    paddingHorizontal: 28,
-    paddingTop: 48,
-    paddingBottom: 40,
+    paddingHorizontal: SPACING['2xl'] + 4, // 28
+    paddingTop: SPACING['3xl'] + 16, // 48
+    paddingBottom: SPACING['3xl'] + 8, // 40
     justifyContent: "space-between",
   },
-
-  // Brand
-  brandSection: {
-    alignItems: "flex-start",
+  hero: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  preTitle: {
-    fontFamily: "LilitaOne_400Regular",
-    fontSize: 28,
-    color: "rgba(255, 255, 255, 0.85)",
-    marginBottom: 4,
+  iconBadge: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: SPACING['2xl'],
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   appName: {
     fontFamily: "LilitaOne_400Regular",
-    fontSize: 52,
-    color: "#FFFFFF",
+    fontSize: FONT['3xl'], // 36
+    color: colors.text,
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   tagline: {
-    fontFamily: "DancingScript_600SemiBold",
-    fontSize: 22,
-    color: "rgba(255, 255, 255, 0.8)",
-    lineHeight: 30,
+    fontSize: FONT.base,
+    color: colors.textMuted,
+    lineHeight: 24,
+    textAlign: "center",
   },
-
-  // Bottom block
   bottomSection: {
-    gap: 20,
+    gap: SPACING.lg,
     alignItems: "center",
   },
-
-  // Frosted glass button
-  ctaButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.18)",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.55)",
-    borderRadius: 14,
-    paddingVertical: 18,
-    alignItems: "center",
-    alignSelf: "stretch",
+  signInBtn: {
+    paddingVertical: SPACING.sm,
   },
-  ctaText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "600",
-    letterSpacing: 0.4,
-  },
-
-  // Sign in link
   signInText: {
-    color: "rgba(255, 255, 255, 0.7)",
-    fontSize: 14,
+    color: colors.textMuted,
+    fontSize: FONT.sm + 1, // 15
   },
   signInLink: {
-    color: "#FFFFFF",
+    color: colors.accent,
     fontWeight: "600",
-    textDecorationLine: "underline",
   },
 });

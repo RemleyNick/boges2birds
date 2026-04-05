@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { colors } from '@/constants/colors'
 import { useEntitlement } from '@/hooks/useEntitlement'
@@ -132,7 +133,7 @@ export default function LibraryScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.lockedContainer}>
-          <Text style={styles.lockedIcon}>{'\u{1F512}'}</Text>
+          <Ionicons name="lock-closed" size={48} color={colors.textSubtle} style={styles.lockedIcon} />
           <Text style={styles.lockedTitle}>Browse Drills & Articles with Premium</Text>
           <Text style={styles.lockedBody}>
             Access the full drill library and golf articles to level up your game.
@@ -396,7 +397,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   lockedIcon: {
-    fontSize: 48,
     marginBottom: 4,
   },
   lockedTitle: {

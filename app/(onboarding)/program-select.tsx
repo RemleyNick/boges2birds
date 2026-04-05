@@ -4,6 +4,7 @@ import {
 } from '@expo-google-fonts/lilita-one'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -29,8 +30,8 @@ export default function ProgramSelectScreen() {
     <SafeAreaView style={styles.root}>
       {isChange && (
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
-            <Text style={styles.backChevron}>‹</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
           </TouchableOpacity>
         </View>
       )}
@@ -91,11 +92,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignSelf: 'flex-start',
-  },
-  backChevron: {
-    fontSize: 36,
-    color: colors.text,
-    lineHeight: 40,
   },
   inner: {
     flex: 1,

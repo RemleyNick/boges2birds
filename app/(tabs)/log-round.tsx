@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { colors } from '@/constants/colors'
 import { useEntitlement } from '@/hooks/useEntitlement'
@@ -102,7 +103,7 @@ export default function LogRoundScreen() {
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.lockedContainer}>
-          <Text style={styles.lockedIcon}>{'\u{1F512}'}</Text>
+          <Ionicons name="lock-closed" size={48} color={colors.textSubtle} style={styles.lockedIcon} />
           <Text style={styles.lockedTitle}>Log Rounds with Premium</Text>
           <Text style={styles.lockedBody}>
             Track your scores and stats to get personalized practice plans.
@@ -335,7 +336,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   lockedIcon: {
-    fontSize: 48,
     marginBottom: 4,
   },
   lockedTitle: {

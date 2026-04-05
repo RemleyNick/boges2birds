@@ -1,19 +1,20 @@
 import { useState } from 'react'
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
+import { Button, Input } from '@/components/ui'
 import { colors } from '@/constants/colors'
+import { FONT, SPACING } from '@/constants/tokens'
 import { signIn } from '@/services/auth'
 import { identifyUser } from '@/services/subscriptions'
 import { getOrCreateAuthUser } from '@/repositories/usersRepo'
@@ -72,28 +73,29 @@ export default function SignInScreen() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backText}>‹ Back</Text>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.accent} />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
 
         <Text style={styles.heading}>Sign In</Text>
         <Text style={styles.subtitle}>Welcome back to Boges2Birds</Text>
 
         <View style={styles.form}>
-          <TextInput
-            style={styles.input}
+          <Input
             placeholder="Email"
-            placeholderTextColor={colors.textSubtle}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <TextInput
-            style={styles.input}
+          <Input
             placeholder="Password"
-            placeholderTextColor={colors.textSubtle}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -101,23 +103,20 @@ export default function SignInScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+          <Button
+            title="Sign In"
             onPress={handleSignIn}
-            activeOpacity={0.7}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
+            loading={loading}
+            style={{ marginTop: SPACING.xs }}
+          />
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.replace('/(auth)/sign-up')}>
+          <TouchableOpacity
+            onPress={() => router.replace('/(auth)/sign-up')}
+            activeOpacity={0.7}
+          >
             <Text style={styles.footerLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>
@@ -133,70 +132,50 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingHorizontal: SPACING['2xl'],
+    paddingTop: SPACING.md,
   },
   backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    marginBottom: 24,
+    marginBottom: SPACING['2xl'],
   },
   backText: {
-    fontSize: 17,
+    fontSize: FONT.lg - 1, // 17
     color: colors.accent,
     fontWeight: '500',
+    marginLeft: 2,
   },
   heading: {
-    fontSize: 28,
+    fontSize: FONT['2xl'], // 28
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 6,
+    marginBottom: SPACING.xs + 2,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: FONT.sm + 1, // 15
     color: colors.textMuted,
-    marginBottom: 32,
+    marginBottom: SPACING['3xl'],
   },
   form: {
-    gap: 14,
-  },
-  input: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: colors.text,
+    gap: SPACING.md + 2, // 14
   },
   error: {
-    fontSize: 14,
+    fontSize: FONT.sm,
     color: colors.danger,
-  },
-  button: {
-    backgroundColor: colors.accent,
-    borderRadius: 14,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 28,
+    marginTop: SPACING['2xl'] + 4,
   },
   footerText: {
-    fontSize: 15,
+    fontSize: FONT.sm + 1,
     color: colors.textMuted,
   },
   footerLink: {
-    fontSize: 15,
+    fontSize: FONT.sm + 1,
     fontWeight: '600',
     color: colors.accent,
   },

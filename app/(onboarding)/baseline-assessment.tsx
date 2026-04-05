@@ -1,11 +1,8 @@
 import {
-  DancingScript_600SemiBold,
-  useFonts as useDancing,
-} from '@expo-google-fonts/dancing-script'
-import {
   LilitaOne_400Regular,
   useFonts as useLilita,
 } from '@expo-google-fonts/lilita-one'
+import Ionicons from '@expo/vector-icons/Ionicons'
 import { useEffect } from 'react'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import {
@@ -66,8 +63,7 @@ export default function BaselineAssessmentScreen() {
   }, [isReassess, latestAssessment])
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
-  const [dancingLoaded] = useDancing({ DancingScript_600SemiBold })
-  if (!lilitaLoaded || !dancingLoaded) return null
+  if (!lilitaLoaded) return null
 
   const allRated = SKILLS.every((s) => skillRatings[s.key] !== undefined)
   const canProceed = allRated && weeklyTime !== null
@@ -75,8 +71,8 @@ export default function BaselineAssessmentScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12}>
-          <Text style={styles.backChevron}>‹</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={12} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -185,11 +181,6 @@ const styles = StyleSheet.create({
   backButton: {
     alignSelf: 'flex-start',
   },
-  backChevron: {
-    fontSize: 36,
-    color: colors.text,
-    lineHeight: 40,
-  },
   scroll: {
     flex: 1,
   },
@@ -205,11 +196,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontFamily: 'DancingScript_600SemiBold',
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textMuted,
     marginBottom: 32,
-    lineHeight: 26,
+    lineHeight: 24,
   },
   section: {
     marginBottom: 32,

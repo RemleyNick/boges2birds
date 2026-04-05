@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import Ionicons from '@expo/vector-icons/Ionicons'
 
+import { Button, Card } from '@/components/ui'
 import { colors } from '@/constants/colors'
 import { useActiveTrainingBlock } from '@/hooks/useActiveTrainingBlock'
 import { useEntitlement } from '@/hooks/useEntitlement'
@@ -55,13 +57,12 @@ export default function HomeScreen() {
           <Text style={styles.emptyBody}>
             Something went wrong. Tap below to try again.
           </Text>
-          <TouchableOpacity
-            style={styles.retryButton}
+          <Button
+            title="Retry"
             onPress={() => refetch()}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
+            fullWidth={false}
+            style={{ marginTop: 16 }}
+          />
         </View>
       </SafeAreaView>
     )
@@ -90,16 +91,30 @@ export default function HomeScreen() {
           const isDone = session.status === 'complete'
           const isLocked = !isPremium && currentWeek > 1
           return (
-            <TouchableOpacity
+            <Card
               key={session.id}
-              style={[styles.card, isDone && styles.cardDone, isLocked && styles.cardLocked]}
+              elevated
               onPress={() => isLocked ? showPaywall() : router.push(`/practice/${session.id}`)}
-              activeOpacity={0.7}
+              style={{
+                ...styles.card,
+                ...(isDone ? styles.cardDone : null),
+                ...(isLocked ? styles.cardLocked : null),
+              }}
             >
               <View style={styles.cardContent}>
-                <Text style={[styles.skill, isLocked && styles.lockedText]} numberOfLines={1}>
-                  {isLocked ? '\u{1F512} ' : ''}{SKILL_LABELS[session.primarySkill as SkillArea]}
-                </Text>
+                <View style={styles.skillRow}>
+                  {isLocked && (
+                    <Ionicons
+                      name="lock-closed"
+                      size={16}
+                      color={colors.textSubtle}
+                      style={{ marginRight: 6 }}
+                    />
+                  )}
+                  <Text style={[styles.skill, isLocked && styles.lockedText]} numberOfLines={1}>
+                    {SKILL_LABELS[session.primarySkill as SkillArea]}
+                  </Text>
+                </View>
                 {isLocked ? (
                   <Text style={styles.lockedMeta}>Upgrade to unlock</Text>
                 ) : (
@@ -108,10 +123,11 @@ export default function HomeScreen() {
               </View>
               {isDone && !isLocked && (
                 <View style={styles.doneBadge}>
+                  <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                   <Text style={styles.doneBadgeText}>Done</Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </Card>
           )
         })}
       </ScrollView>
@@ -156,9 +172,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   card: {
-    backgroundColor: colors.cardBg,
-    borderRadius: 12,
-    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -173,6 +186,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  skillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+  },
   skill: {
     fontSize: 16,
     fontWeight: '600',
@@ -183,6 +201,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   doneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: colors.accent,
     borderRadius: 8,
     paddingHorizontal: 10,
@@ -204,17 +225,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSubtle,
     fontStyle: 'italic',
-  },
-  retryButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    marginTop: 16,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
   },
 })

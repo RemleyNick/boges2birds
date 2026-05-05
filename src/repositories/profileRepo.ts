@@ -4,7 +4,7 @@ import { users, skillAssessments, userPrograms, programs } from '@/db/schema'
 import type { User, SkillAssessment } from '@/db/schema'
 import { logSyncEntry } from './syncLogHelper'
 import { regeneratePendingSessions } from './trainingBlocksRepo'
-import type { ProgramSlug, WeeklyTime } from '@/types'
+import type { ProgramSlug, SessionConfig } from '@/types'
 
 export async function getUser(userId: string): Promise<User | undefined> {
   return db.select().from(users).where(eq(users.id, userId)).get()
@@ -57,25 +57,30 @@ export async function updateDisplayName(
   await logSyncEntry('users', userId, 'update')
 }
 
-export async function updateWeeklyTime(
+export async function updateSessionConfig(
   userId: string,
-  weeklyTime: string,
+  sessionConfig: SessionConfig,
 ): Promise<void> {
-  // Update the most recent assessment's weekly time
+  // Update the most recent assessment's session config
   const latest = await getLatestAssessment(userId)
   if (!latest) return
   await db
     .update(skillAssessments)
-    .set({ weeklyTimeAvailable: weeklyTime, updatedAt: new Date() })
+    .set({
+      sessionsPerWeek: sessionConfig.sessionsPerWeek,
+      sessionDuration: sessionConfig.sessionDuration,
+      sessionStructure: sessionConfig.structure,
+      updatedAt: new Date(),
+    })
     .where(eq(skillAssessments.id, latest.id))
   await logSyncEntry('skill_assessments', latest.id, 'update')
 
-  // Regenerate pending sessions with the new time budget
+  // Regenerate pending sessions with the new config
   const activeProgram = await getActiveUserProgram(userId)
   if (activeProgram) {
     await regeneratePendingSessions(
       userId,
-      weeklyTime as WeeklyTime,
+      sessionConfig,
       activeProgram.programSlug as ProgramSlug,
     )
   }

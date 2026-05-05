@@ -22,7 +22,7 @@ import { useOnboardingStore } from '@/store/onboardingStore'
 import { useUserStore } from '@/store/userStore'
 import { saveSkillAssessment } from '@/repositories/skillAssessmentsRepo'
 import { useLatestAssessment } from '@/hooks/useProfile'
-import { SkillArea, SkillRatings, WeeklyTime } from '@/types'
+import type { SessionConfig, SessionDuration, SessionsPerWeek, SessionStructure, SkillArea, SkillRatings } from '@/types'
 
 const SKILLS: { key: SkillArea; label: string }[] = [
   { key: 'teeShot',   label: 'Tee Shots' },
@@ -32,12 +32,24 @@ const SKILLS: { key: SkillArea; label: string }[] = [
   { key: 'courseMgmt', label: 'Course Management' },
 ]
 
-const WEEKLY_TIMES: { value: WeeklyTime; label: string }[] = [
-  { value: '<60',     label: '<60m' },
-  { value: '60-90',   label: '60–90m' },
-  { value: '90-150',  label: '90–150m' },
-  { value: '150-240', label: '150–240m' },
-  { value: '240+',    label: '240m+' },
+const SESSION_COUNTS: { value: SessionsPerWeek; label: string }[] = [
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+]
+
+const SESSION_DURATIONS: { value: SessionDuration; label: string }[] = [
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '60 min' },
+  { value: 90, label: '90 min' },
+]
+
+const STRUCTURES: { value: SessionStructure; label: string; description: string }[] = [
+  { value: 'auto', label: 'Auto', description: 'Engine picks the best split for you' },
+  { value: 'focused', label: 'Focused', description: 'Group by activity (range day, short game day)' },
+  { value: 'mixed', label: 'Mixed', description: 'A little of everything each session' },
 ]
 
 const RATINGS = [1, 2, 3, 4, 5]
@@ -46,7 +58,16 @@ export default function BaselineAssessmentScreen() {
   const router = useRouter()
   const { context } = useLocalSearchParams<{ context?: string }>()
   const isReassess = context === 'reassess'
-  const { skillRatings, weeklyTime, setSkillRating, setWeeklyTime } = useOnboardingStore()
+  const {
+    skillRatings,
+    sessionsPerWeek,
+    sessionDuration,
+    sessionStructure,
+    setSkillRating,
+    setSessionsPerWeek,
+    setSessionDuration,
+    setSessionStructure,
+  } = useOnboardingStore()
   const userId = useUserStore((s) => s.userId)
   const queryClient = useQueryClient()
   const { data: latestAssessment } = useLatestAssessment(isReassess ? userId : null)
@@ -59,14 +80,16 @@ export default function BaselineAssessmentScreen() {
     if (latestAssessment.shortGameRating != null) setSkillRating('shortGame', latestAssessment.shortGameRating)
     if (latestAssessment.puttingRating != null) setSkillRating('putting', latestAssessment.puttingRating)
     if (latestAssessment.courseMgmtRating != null) setSkillRating('courseMgmt', latestAssessment.courseMgmtRating)
-    if (latestAssessment.weeklyTimeAvailable) setWeeklyTime(latestAssessment.weeklyTimeAvailable as WeeklyTime)
+    if (latestAssessment.sessionsPerWeek) setSessionsPerWeek(latestAssessment.sessionsPerWeek as SessionsPerWeek)
+    if (latestAssessment.sessionDuration) setSessionDuration(latestAssessment.sessionDuration as SessionDuration)
+    if (latestAssessment.sessionStructure) setSessionStructure(latestAssessment.sessionStructure as SessionStructure)
   }, [isReassess, latestAssessment])
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
   if (!lilitaLoaded) return null
 
   const allRated = SKILLS.every((s) => skillRatings[s.key] !== undefined)
-  const canProceed = allRated && weeklyTime !== null
+  const canProceed = allRated && sessionsPerWeek !== null && sessionDuration !== null && sessionStructure !== null
 
   return (
     <SafeAreaView style={styles.root}>
@@ -124,19 +147,19 @@ export default function BaselineAssessmentScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly practice time</Text>
+          <Text style={styles.sectionTitle}>Sessions per week</Text>
           <View style={styles.pillRow}>
-            {WEEKLY_TIMES.map((t) => {
-              const selected = weeklyTime === t.value
+            {SESSION_COUNTS.map((item) => {
+              const selected = sessionsPerWeek === item.value
               return (
                 <TouchableOpacity
-                  key={t.value}
+                  key={item.value}
                   style={[styles.pill, selected && styles.pillSelected]}
-                  onPress={() => setWeeklyTime(t.value)}
+                  onPress={() => setSessionsPerWeek(item.value)}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.pillText, selected && styles.pillTextSelected]}>
-                    {t.label}
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               )
@@ -144,11 +167,63 @@ export default function BaselineAssessmentScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Session duration</Text>
+          <View style={styles.pillRow}>
+            {SESSION_DURATIONS.map((item) => {
+              const selected = sessionDuration === item.value
+              return (
+                <TouchableOpacity
+                  key={item.value}
+                  style={[styles.pill, selected && styles.pillSelected]}
+                  onPress={() => setSessionDuration(item.value)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.pillText, selected && styles.pillTextSelected]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Session structure</Text>
+          {STRUCTURES.map((item) => {
+            const selected = sessionStructure === item.value
+            return (
+              <TouchableOpacity
+                key={item.value}
+                style={[styles.structureCard, selected && styles.structureCardSelected]}
+                onPress={() => setSessionStructure(item.value)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.structureRow}>
+                  <Text style={[styles.structureLabel, selected && styles.structureLabelSelected]}>
+                    {item.label}
+                    {item.value === 'auto' ? ' (Recommended)' : ''}
+                  </Text>
+                  {selected && <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />}
+                </View>
+                <Text style={[styles.structureDesc, selected && styles.structureDescSelected]}>
+                  {item.description}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+
         <TouchableOpacity
           style={[styles.buildButton, !canProceed && styles.buildButtonDisabled]}
           onPress={async () => {
-            if (isReassess && userId && weeklyTime) {
-              await saveSkillAssessment(userId, skillRatings as SkillRatings, weeklyTime)
+            if (isReassess && userId && sessionsPerWeek && sessionDuration && sessionStructure) {
+              const sessionConfig: SessionConfig = {
+                sessionsPerWeek,
+                sessionDuration,
+                structure: sessionStructure,
+              }
+              await saveSkillAssessment(userId, skillRatings as SkillRatings, sessionConfig)
               queryClient.invalidateQueries({ queryKey: ['latest-assessment'] })
               router.back()
             } else {
@@ -275,6 +350,36 @@ const styles = StyleSheet.create({
   },
   pillTextSelected: {
     color: '#FFFFFF',
+  },
+  structureCard: {
+    borderRadius: 12,
+    backgroundColor: colors.cardBg,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  structureCardSelected: {
+    backgroundColor: colors.accent,
+  },
+  structureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  structureLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  structureLabelSelected: {
+    color: '#FFFFFF',
+  },
+  structureDesc: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  structureDescSelected: {
+    color: 'rgba(255,255,255,0.85)',
   },
   buildButton: {
     backgroundColor: colors.accent,

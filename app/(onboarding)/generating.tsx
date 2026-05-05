@@ -18,7 +18,7 @@ import { saveTrainingBlock } from '@/repositories/trainingBlocksRepo'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { useUserStore } from '@/store/userStore'
-import type { SkillRatings } from '@/types'
+import type { SessionConfig, SkillRatings } from '@/types'
 import { eq } from 'drizzle-orm'
 
 export default function GeneratingScreen() {
@@ -50,15 +50,21 @@ export default function GeneratingScreen() {
     const minDelay = new Promise<void>((r) => setTimeout(r, 1500))
 
     async function run() {
-      const { program, skillRatings, weeklyTime } = useOnboardingStore.getState()
+      const { program, skillRatings, sessionsPerWeek, sessionDuration, sessionStructure } = useOnboardingStore.getState()
       const userId = useUserStore.getState().userId!
 
-      const priorities = computeSkillPriorities([], skillRatings as SkillRatings, program!)
-      const block = generateBlockStructure(priorities, weeklyTime!, program!, 1, DRILL_SEEDS)
+      const sessionConfig: SessionConfig = {
+        sessionsPerWeek: sessionsPerWeek!,
+        sessionDuration: sessionDuration!,
+        structure: sessionStructure!,
+      }
 
-      await saveSkillAssessment(userId, skillRatings as SkillRatings, weeklyTime!)
+      const priorities = computeSkillPriorities([], skillRatings as SkillRatings, program!)
+      const block = generateBlockStructure(priorities, sessionConfig, program!, 1, DRILL_SEEDS)
+
+      await saveSkillAssessment(userId, skillRatings as SkillRatings, sessionConfig)
       await enrollInProgram(userId, program!)
-      const blockId = await saveTrainingBlock(userId, block)
+      const blockId = await saveTrainingBlock(userId, block, sessionConfig)
 
       // Fire-and-forget LLM enrichment
       enrichWithLLMSummary(block)

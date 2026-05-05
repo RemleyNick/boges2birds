@@ -4,8 +4,9 @@ import {
   getLatestAssessment,
   getActiveUserProgram,
   updateDisplayName,
-  updateWeeklyTime,
+  updateSessionConfig,
 } from '@/repositories/profileRepo'
+import type { SessionConfig } from '@/types'
 
 export function useUser(userId: string | null) {
   return useQuery({
@@ -41,10 +42,10 @@ export function useUpdateDisplayName(userId: string) {
   })
 }
 
-export function useUpdateWeeklyTime(userId: string) {
+export function useUpdateSessionConfig(userId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (time: string) => updateWeeklyTime(userId, time),
+    mutationFn: (config: SessionConfig) => updateSessionConfig(userId, config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['latest-assessment', userId] })
       queryClient.invalidateQueries({ queryKey: ['active-block', userId] })

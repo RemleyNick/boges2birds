@@ -1,6 +1,20 @@
 export type ProgramSlug = 'break100' | 'break90' | 'break80'
 export type SkillArea = 'teeShot' | 'irons' | 'shortGame' | 'putting' | 'courseMgmt'
+
+/** @deprecated Use SessionConfig instead */
 export type WeeklyTime = '<60' | '60-90' | '90-150' | '150-240' | '240+'
+
+// --- Session configuration types ---
+
+export type SessionStructure = 'auto' | 'focused' | 'mixed'
+export type SessionDuration = 30 | 45 | 60 | 90
+export type SessionsPerWeek = 1 | 2 | 3 | 4
+
+export interface SessionConfig {
+  sessionsPerWeek: SessionsPerWeek
+  sessionDuration: SessionDuration
+  structure: SessionStructure
+}
 
 export interface SkillRatings {
   teeShot: number
@@ -36,6 +50,7 @@ export interface Session {
   sessionNumber: number
   sessionType: SessionType
   primarySkill: SkillArea
+  skills: SkillArea[]
   durationMinutes: number
   drills: DrillAllocation[]
 }

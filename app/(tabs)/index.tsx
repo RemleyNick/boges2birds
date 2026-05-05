@@ -112,7 +112,9 @@ export default function HomeScreen() {
                     />
                   )}
                   <Text style={[styles.skill, isLocked && styles.lockedText]} numberOfLines={1}>
-                    {SKILL_LABELS[session.primarySkill as SkillArea]}
+                    {(session.skills as SkillArea[] | null)?.length
+                      ? (session.skills as SkillArea[]).map((s) => SKILL_LABELS[s]).join(' + ')
+                      : SKILL_LABELS[session.primarySkill as SkillArea]}
                   </Text>
                 </View>
                 {isLocked ? (

@@ -1,6 +1,7 @@
-import type { Drill, DrillAllocation, ProgramSlug, Session, SessionType, SkillArea, SkillPriority, TrainingBlock, WeeklyTime } from '@/types'
-import { MIN_SESSION_DURATION, WEEKLY_TIME_BUDGET, WEEK_VOLUME } from './thresholds'
+import type { Drill, DrillAllocation, ProgramSlug, Session, SessionConfig, SessionType, SkillArea, SkillPriority, TrainingBlock } from '@/types'
+import { MIN_SESSION_DURATION, WEEK_VOLUME } from './thresholds'
 import { selectDrills } from './drillSelector'
+import { getSessionGroupings } from './skillGrouping'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -15,10 +16,19 @@ function skillToSessionType(skill: SkillArea): SessionType {
   }
 }
 
+/** Derive the session type from a multi-skill group. */
+function groupToSessionType(skills: SkillArea[]): SessionType {
+  if (skills.length === 1) return skillToSessionType(skills[0])
+  // If all skills are range-type, label as driving; otherwise mixed
+  const rangeSkills: SkillArea[] = ['teeShot', 'irons']
+  if (skills.every((s) => rangeSkills.includes(s))) return 'driving'
+  return 'mixed'
+}
+
 /**
- * Distribute `totalMinutes` across all 5 skills proportional to priority score.
+ * Distribute `totalMinutes` across skills proportional to priority score.
  * Higher score = more time. Each skill gets at least MIN_SESSION_DURATION.
- * Returns durations in priority order (same order as `priorities`).
+ * Returns durations in the same order as `priorities`.
  */
 export function distributeTime(
   priorities: SkillPriority[],
@@ -59,43 +69,61 @@ export function distributeTime(
 
 /**
  * Build a full 4-week training block. Pure function — no I/O.
- * Every week produces exactly 5 sessions (one per skill area).
- * Time per session is weighted by priority score (higher = more time).
- * Week volume scales the total weekly time budget.
+ *
+ * Sessions per week and duration are determined by SessionConfig.
+ * Skills are grouped across sessions based on structure preference.
+ * Week volume multipliers scale effective session duration.
  */
 export function generateBlockStructure(
   priorities: SkillPriority[],
-  weeklyTime: WeeklyTime,
+  sessionConfig: SessionConfig,
   program: ProgramSlug,
   blockNumber: number,
   drillPool: Drill[],
 ): TrainingBlock {
-  const baseBudget = WEEKLY_TIME_BUDGET[weeklyTime]
+  const groupings = getSessionGroupings(sessionConfig, priorities)
   const sessions: Session[] = []
   let sessionNumber = 1
 
   for (const weekNumber of [1, 2, 3, 4] as const) {
-    const weekBudget = Math.round(baseBudget * WEEK_VOLUME[weekNumber])
-    const durations = distributeTime(priorities, weekBudget)
+    const effectiveDuration = Math.round(sessionConfig.sessionDuration * WEEK_VOLUME[weekNumber])
 
-    for (let i = 0; i < priorities.length; i++) {
-      const primarySkill = priorities[i].skill
-      const durationMinutes = durations[i]
-      const sessionType = skillToSessionType(primarySkill)
-      const selectedDrills = selectDrills(primarySkill, program, durationMinutes, drillPool)
-      const drillAllocations: DrillAllocation[] = selectedDrills.map((sd) => ({
-        drillId: sd.drill.id,
-        durationOverride: sd.durationOverride,
-        shotCountOverride: sd.shotCountOverride,
-      }))
+    for (let slotIndex = 0; slotIndex < groupings.length; slotIndex++) {
+      const skillGroup = groupings[slotIndex]
 
+      // Build priorities subset for skills in this session
+      const sessionPriorities = skillGroup.map((skill) => {
+        const found = priorities.find((p) => p.skill === skill)
+        return found ?? { skill, score: 1 }
+      })
+
+      // Distribute time across skills within this session
+      const durations = distributeTime(sessionPriorities, effectiveDuration)
+
+      // Select drills for each skill's time slice
+      const allDrills: DrillAllocation[] = []
+      for (let i = 0; i < skillGroup.length; i++) {
+        const skill = skillGroup[i]
+        const skillDuration = durations[i]
+        const selectedDrills = selectDrills(skill, program, skillDuration, drillPool)
+        for (const sd of selectedDrills) {
+          allDrills.push({
+            drillId: sd.drill.id,
+            durationOverride: sd.durationOverride,
+            shotCountOverride: sd.shotCountOverride,
+          })
+        }
+      }
+
+      const primarySkill = sessionPriorities[0].skill
       sessions.push({
         weekNumber,
         sessionNumber,
-        sessionType,
+        sessionType: groupToSessionType(skillGroup),
         primarySkill,
-        durationMinutes,
-        drills: drillAllocations,
+        skills: skillGroup,
+        durationMinutes: effectiveDuration,
+        drills: allDrills,
       })
 
       sessionNumber++

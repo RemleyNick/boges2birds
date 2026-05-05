@@ -2,11 +2,12 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { sessions as sessionsTable, sessionDrills, trainingBlocks } from '@/db/schema'
 import type { SessionRow, TrainingBlockRow } from '@/db/schema'
-import type { ProgramSlug, SkillArea, SkillPriority, TrainingBlock, WeeklyTime } from '@/types'
+import type { ProgramSlug, SessionConfig, SkillArea, SkillPriority, TrainingBlock } from '@/types'
 import { logSyncEntries } from '@/repositories/syncLogHelper'
 import { distributeTime } from '@/engine/blockGenerator'
 import { selectDrills } from '@/engine/drillSelector'
-import { WEEKLY_TIME_BUDGET, WEEK_VOLUME } from '@/engine/thresholds'
+import { WEEK_VOLUME } from '@/engine/thresholds'
+import { getSessionGroupings } from '@/engine/skillGrouping'
 import { DRILL_SEEDS } from '@/engine/drillSeeds'
 
 export interface ActiveTrainingBlock extends TrainingBlockRow {
@@ -22,6 +23,7 @@ interface SyncEntry {
 export async function saveTrainingBlock(
   userId: string,
   block: TrainingBlock,
+  sessionConfig?: SessionConfig,
 ): Promise<string> {
   const blockId = crypto.randomUUID()
   const now = new Date()
@@ -38,6 +40,7 @@ export async function saveTrainingBlock(
     weekStartDate: today,
     weekEndDate: endDate,
     skillPriorities: block.skillPriorities,
+    sessionConfig: sessionConfig ?? null,
     llmSummary: block.llmSummary,
     status: 'active',
     createdAt: now,
@@ -54,6 +57,7 @@ export async function saveTrainingBlock(
       sessionNumber: session.sessionNumber,
       sessionType: session.sessionType,
       primarySkill: session.primarySkill,
+      skills: session.skills,
       durationMinutes: session.durationMinutes,
       status: 'pending',
       createdAt: now,
@@ -106,13 +110,13 @@ export async function getActiveTrainingBlock(
 }
 
 /**
- * Regenerate pending sessions for the active training block when weekly
- * practice time changes. Completed sessions are left untouched.
- * Updates durations and re-selects drills for each pending session.
+ * Regenerate pending sessions for the active training block when session
+ * config changes. Completed sessions are left untouched.
+ * Deletes pending sessions and regenerates them with new groupings/durations.
  */
 export async function regeneratePendingSessions(
   userId: string,
-  newWeeklyTime: WeeklyTime,
+  sessionConfig: SessionConfig,
   programSlug: ProgramSlug,
 ): Promise<void> {
   const block = await getActiveTrainingBlock(userId)
@@ -122,67 +126,85 @@ export async function regeneratePendingSessions(
   const pendingSessions = block.sessions.filter((s) => s.status !== 'complete')
   if (pendingSessions.length === 0) return
 
-  // Group pending sessions by week number
-  const byWeek = new Map<number, SessionRow[]>()
-  for (const s of pendingSessions) {
-    const list = byWeek.get(s.weekNumber) ?? []
-    list.push(s)
-    byWeek.set(s.weekNumber, list)
-  }
+  // Determine which weeks still have pending sessions
+  const pendingWeeks = [...new Set(pendingSessions.map((s) => s.weekNumber))]
 
   const syncEntries: SyncEntry[] = []
   const now = new Date()
-  const baseBudget = WEEKLY_TIME_BUDGET[newWeeklyTime]
 
-  // Build skill → index map for duration lookup
-  const skillIndex = new Map(skillPriorities.map((p, i) => [p.skill, i]))
+  // Delete all pending sessions and their drills
+  for (const session of pendingSessions) {
+    const existingDrills = await db
+      .select({ id: sessionDrills.id })
+      .from(sessionDrills)
+      .where(eq(sessionDrills.sessionId, session.id))
+    for (const ed of existingDrills) {
+      syncEntries.push({ tableName: 'session_drills', recordId: ed.id, operation: 'delete' })
+    }
+    await db.delete(sessionDrills).where(eq(sessionDrills.sessionId, session.id))
+    await db.delete(sessionsTable).where(eq(sessionsTable.id, session.id))
+    syncEntries.push({ tableName: 'sessions', recordId: session.id, operation: 'delete' })
+  }
 
-  for (const [weekNum, weekSessions] of byWeek) {
-    const weekBudget = Math.round(baseBudget * WEEK_VOLUME[weekNum as 1 | 2 | 3 | 4])
-    const durations = distributeTime(skillPriorities, weekBudget)
+  // Regenerate sessions for pending weeks with new config
+  const groupings = getSessionGroupings(sessionConfig, skillPriorities)
+  let sessionNumber = block.sessions
+    .filter((s) => s.status === 'complete')
+    .length + 1
 
-    for (const session of weekSessions) {
-      const idx = skillIndex.get(session.primarySkill as SkillArea)
-      if (idx === undefined) continue
+  for (const weekNum of pendingWeeks.sort()) {
+    const effectiveDuration = Math.round(sessionConfig.sessionDuration * WEEK_VOLUME[weekNum as 1 | 2 | 3 | 4])
 
-      const newDuration = durations[idx]
+    for (const skillGroup of groupings) {
+      const sessionPriorities = skillGroup.map((skill) => {
+        const found = skillPriorities.find((p) => p.skill === skill)
+        return found ?? { skill, score: 1 }
+      })
 
-      // Update session duration
-      await db
-        .update(sessionsTable)
-        .set({ durationMinutes: newDuration, updatedAt: now })
-        .where(eq(sessionsTable.id, session.id))
-      syncEntries.push({ tableName: 'sessions', recordId: session.id, operation: 'update' })
+      const durations = distributeTime(sessionPriorities, effectiveDuration)
+      const allDrills: { drillId: string; durationOverride: number | null; shotCountOverride: number | null }[] = []
 
-      // Fetch existing session_drills for sync log, then delete
-      const existingDrills = await db
-        .select({ id: sessionDrills.id })
-        .from(sessionDrills)
-        .where(eq(sessionDrills.sessionId, session.id))
-      for (const ed of existingDrills) {
-        syncEntries.push({ tableName: 'session_drills', recordId: ed.id, operation: 'delete' })
+      for (let i = 0; i < skillGroup.length; i++) {
+        const selected = selectDrills(skillGroup[i], programSlug, durations[i], DRILL_SEEDS)
+        for (const sd of selected) {
+          allDrills.push({
+            drillId: sd.drill.id,
+            durationOverride: sd.durationOverride,
+            shotCountOverride: sd.shotCountOverride,
+          })
+        }
       }
-      await db.delete(sessionDrills).where(eq(sessionDrills.sessionId, session.id))
 
-      // Select new drills for updated duration
-      const selected = selectDrills(
-        session.primarySkill as SkillArea,
-        programSlug,
-        newDuration,
-        DRILL_SEEDS,
-      )
+      const primarySkill = sessionPriorities[0].skill
+      const sessionId = crypto.randomUUID()
+      await db.insert(sessionsTable).values({
+        id: sessionId,
+        trainingBlockId: block.id,
+        weekNumber: weekNum,
+        sessionNumber,
+        sessionType: skillGroup.length === 1
+          ? (skillGroup[0] === 'teeShot' ? 'driving' : skillGroup[0] === 'irons' ? 'irons' : skillGroup[0] === 'shortGame' ? 'short_game' : skillGroup[0] === 'putting' ? 'putting' : 'mixed')
+          : 'mixed',
+        primarySkill,
+        skills: skillGroup,
+        durationMinutes: effectiveDuration,
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      })
+      syncEntries.push({ tableName: 'sessions', recordId: sessionId, operation: 'insert' })
+      sessionNumber++
 
-      // Insert new session_drills
-      for (let i = 0; i < selected.length; i++) {
-        const sd = selected[i]
+      for (let i = 0; i < allDrills.length; i++) {
+        const drill = allDrills[i]
         const sdId = crypto.randomUUID()
         await db.insert(sessionDrills).values({
           id: sdId,
-          sessionId: session.id,
-          drillId: sd.drill.id,
+          sessionId,
+          drillId: drill.drillId,
           orderIndex: i,
-          durationOverride: sd.durationOverride,
-          shotCountOverride: sd.shotCountOverride,
+          durationOverride: drill.durationOverride,
+          shotCountOverride: drill.shotCountOverride,
           completed: false,
           createdAt: now,
           updatedAt: now,
@@ -192,10 +214,10 @@ export async function regeneratePendingSessions(
     }
   }
 
-  // Update block's updatedAt
+  // Update block's sessionConfig and updatedAt
   await db
     .update(trainingBlocks)
-    .set({ updatedAt: now })
+    .set({ sessionConfig, updatedAt: now })
     .where(eq(trainingBlocks.id, block.id))
   syncEntries.push({ tableName: 'training_blocks', recordId: block.id, operation: 'update' })
 

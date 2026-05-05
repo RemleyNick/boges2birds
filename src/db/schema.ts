@@ -1,6 +1,6 @@
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
-import type { ProgramSlug, SkillPriority } from '@/types'
+import type { ProgramSlug, SessionConfig, SkillArea, SkillPriority } from '@/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 // crypto.randomUUID() is a global in Hermes (Expo SDK 49+) and Node 19+.
@@ -46,7 +46,10 @@ export const skillAssessments = sqliteTable('skill_assessments', {
   shortGameRating: integer('short_game_rating'),
   puttingRating: integer('putting_rating'),
   courseMgmtRating: integer('course_mgmt_rating'),
-  weeklyTimeAvailable: text('weekly_time_available'), // WeeklyTime
+  weeklyTimeAvailable: text('weekly_time_available'), // WeeklyTime (deprecated)
+  sessionsPerWeek: integer('sessions_per_week'),
+  sessionDuration: integer('session_duration'),
+  sessionStructure: text('session_structure'),       // SessionStructure
   ...timestamps,
 })
 
@@ -93,6 +96,9 @@ export const trainingBlocks = sqliteTable('training_blocks', {
   skillPriorities: text('skill_priorities', { mode: 'json' })
     .$type<SkillPriority[]>()
     .notNull(),
+  // Stored as JSON: SessionConfig
+  sessionConfig: text('session_config', { mode: 'json' })
+    .$type<SessionConfig>(),
   llmSummary: text('llm_summary'),
   // 'active' | 'completed'
   status: text('status').notNull().default('active'),
@@ -110,6 +116,8 @@ export const sessions = sqliteTable('sessions', {
   sessionNumber: integer('session_number').notNull(),  // within block
   sessionType: text('session_type').notNull(),         // SessionType
   primarySkill: text('primary_skill').notNull(),       // SkillArea
+  // Stored as JSON: SkillArea[]
+  skills: text('skills', { mode: 'json' }).$type<SkillArea[]>(),
   scheduledDate: integer('scheduled_date', { mode: 'timestamp_ms' }),
   durationMinutes: integer('duration_minutes').notNull(),
   // 'pending' | 'complete' | 'skipped'

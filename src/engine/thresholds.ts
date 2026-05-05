@@ -73,9 +73,9 @@ export const PROGRAM_MULTIPLIERS: Record<ProgramSlug, Record<SkillArea, number>>
   },
 }
 
-// ─── Weekly time budget ─────────────────────────────────────────────────────
-// Midpoint minutes for each weekly time bucket.
+// ─── Weekly time budget (deprecated — kept for migration) ────────────────────
 
+/** @deprecated Use SessionConfig (sessionsPerWeek * sessionDuration) instead */
 export const WEEKLY_TIME_BUDGET: Record<WeeklyTime, number> = {
   '<60':     55,
   '60-90':   75,
@@ -83,6 +83,11 @@ export const WEEKLY_TIME_BUDGET: Record<WeeklyTime, number> = {
   '150-240': 195,
   '240+':    300,
 }
+
+// ─── Session config defaults ─────────────────────────────────────────────────
+
+export const DEFAULT_SESSIONS_PER_WEEK = 3
+export const DEFAULT_SESSION_DURATION = 45
 
 // ─── Week volume multipliers ──────────────────────────────────────────────────
 // Week 1: Foundation (60%), Week 2: Build (80%), Week 3: Peak (100%), Week 4: Consolidate (70%)

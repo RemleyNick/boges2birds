@@ -25,10 +25,10 @@ import {
   useLatestAssessment,
   useActiveProgram,
   useUpdateDisplayName,
-  useUpdateWeeklyTime,
+  useUpdateSessionConfig,
 } from '@/hooks/useProfile'
 import { useRoundLogs } from '@/hooks/useRoundLogs'
-import type { WeeklyTime, SkillArea } from '@/types'
+import type { SessionConfig, SessionDuration, SessionsPerWeek, SessionStructure, SkillArea } from '@/types'
 
 const SKILLS: { key: SkillArea; label: string }[] = [
   { key: 'teeShot', label: 'Tee Shots' },
@@ -46,13 +46,13 @@ const SKILL_FIELD_MAP: Record<SkillArea, string> = {
   courseMgmt: 'courseMgmtRating',
 }
 
-const WEEKLY_TIMES: { value: WeeklyTime; label: string }[] = [
-  { value: '<60', label: '<60m' },
-  { value: '60-90', label: '60–90m' },
-  { value: '90-150', label: '90–150m' },
-  { value: '150-240', label: '150–240m' },
-  { value: '240+', label: '240m+' },
-]
+const SESSION_COUNTS: SessionsPerWeek[] = [1, 2, 3, 4]
+const SESSION_DURATIONS: SessionDuration[] = [30, 45, 60, 90]
+const STRUCTURE_LABELS: Record<SessionStructure, string> = {
+  auto: 'Auto',
+  focused: 'Focused',
+  mixed: 'Mixed',
+}
 
 export default function ProfileScreen() {
   const router = useRouter()
@@ -67,13 +67,15 @@ export default function ProfileScreen() {
   const { isPremium } = useEntitlement()
   const { showPaywall } = usePaywall()
   const updateName = useUpdateDisplayName(userId ?? '')
-  const updateTime = useUpdateWeeklyTime(userId ?? '')
+  const updateConfig = useUpdateSessionConfig(userId ?? '')
 
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
 
-  const [editingTime, setEditingTime] = useState(false)
-  const [selectedTime, setSelectedTime] = useState<WeeklyTime | null>(null)
+  const [editingConfig, setEditingConfig] = useState(false)
+  const [editSessions, setEditSessions] = useState<SessionsPerWeek>(3)
+  const [editDuration, setEditDuration] = useState<SessionDuration>(45)
+  const [editStructure, setEditStructure] = useState<SessionStructure>('auto')
 
   const roundStats = useMemo(() => {
     if (roundLogs.length === 0) return null
@@ -98,16 +100,23 @@ export default function ProfileScreen() {
     setEditingName(false)
   }
 
-  function startEditTime() {
-    setSelectedTime((assessment?.weeklyTimeAvailable as WeeklyTime) ?? null)
-    setEditingTime(true)
+  function startEditConfig() {
+    setEditSessions((assessment?.sessionsPerWeek as SessionsPerWeek) ?? 3)
+    setEditDuration((assessment?.sessionDuration as SessionDuration) ?? 45)
+    setEditStructure((assessment?.sessionStructure as SessionStructure) ?? 'auto')
+    setEditingConfig(true)
   }
 
-  function saveTime() {
-    if (selectedTime && userId) {
-      updateTime.mutate(selectedTime)
+  function saveConfig() {
+    if (userId) {
+      const config: SessionConfig = {
+        sessionsPerWeek: editSessions,
+        sessionDuration: editDuration,
+        structure: editStructure,
+      }
+      updateConfig.mutate(config)
     }
-    setEditingTime(false)
+    setEditingConfig(false)
   }
 
   if (isLoading) {
@@ -252,33 +261,55 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </Card>
 
-        {/* ─── Weekly Time Card ───────────────────────────── */}
+        {/* ─── Session Config Card ────────────────────────── */}
         <Card>
-          <Text style={styles.cardTitle}>Weekly Practice Time</Text>
-          {editingTime ? (
+          <Text style={styles.cardTitle}>Practice Schedule</Text>
+          {editingConfig ? (
             <>
+              <Text style={styles.configLabel}>Sessions per week</Text>
               <View style={styles.pillRow}>
-                {WEEKLY_TIMES.map((t) => (
+                {SESSION_COUNTS.map((n) => (
                   <Pill
-                    key={t.value}
-                    label={t.label}
-                    selected={selectedTime === t.value}
-                    onPress={() => setSelectedTime(t.value)}
+                    key={n}
+                    label={`${n}`}
+                    selected={editSessions === n}
+                    onPress={() => setEditSessions(n)}
+                  />
+                ))}
+              </View>
+              <Text style={[styles.configLabel, { marginTop: 12 }]}>Duration</Text>
+              <View style={styles.pillRow}>
+                {SESSION_DURATIONS.map((d) => (
+                  <Pill
+                    key={d}
+                    label={`${d} min`}
+                    selected={editDuration === d}
+                    onPress={() => setEditDuration(d)}
+                  />
+                ))}
+              </View>
+              <Text style={[styles.configLabel, { marginTop: 12 }]}>Structure</Text>
+              <View style={styles.pillRow}>
+                {(['auto', 'focused', 'mixed'] as SessionStructure[]).map((s) => (
+                  <Pill
+                    key={s}
+                    label={STRUCTURE_LABELS[s]}
+                    selected={editStructure === s}
+                    onPress={() => setEditStructure(s)}
                   />
                 ))}
               </View>
               <Button
                 title="Save"
-                onPress={saveTime}
+                onPress={saveConfig}
                 style={{ marginTop: 12, paddingVertical: 12 }}
               />
             </>
           ) : (
-            <TouchableOpacity onPress={startEditTime} activeOpacity={0.7}>
+            <TouchableOpacity onPress={startEditConfig} activeOpacity={0.7}>
               <Text style={styles.cardValue}>
-                {assessment?.weeklyTimeAvailable
-                  ? WEEKLY_TIMES.find((t) => t.value === assessment.weeklyTimeAvailable)
-                      ?.label ?? assessment.weeklyTimeAvailable
+                {assessment?.sessionsPerWeek
+                  ? `${assessment.sessionsPerWeek}x per week, ${assessment.sessionDuration} min, ${STRUCTURE_LABELS[(assessment.sessionStructure as SessionStructure) ?? 'auto']}`
                   : '—'}
               </Text>
               <Text style={styles.tapHint}>Tap to change</Text>
@@ -461,6 +492,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  configLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: 4,
   },
   tapHint: {
     fontSize: 12,

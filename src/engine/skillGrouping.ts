@@ -10,33 +10,21 @@ export const FOCUSED_GROUPINGS: Record<SessionsPerWeek, SkillArea[][]> = {
   4: [['teeShot'], ['irons'], ['shortGame', 'putting'], ['courseMgmt']],
 }
 
-// ─── Auto mode: group by priority ───────────────────────────────────────────
-// Highest-priority skills get dedicated sessions when possible.
-// Lower-priority skills share sessions.
+// ─── Auto mode: venue-based groupings with priority-weighted ordering ────────
+// Uses the same venue groupings as focused mode, but reorders skills within
+// each group so the highest-priority skill comes first (gets the most time
+// via distributeTime).
 
 export function computeAutoGroupings(
   sessionsPerWeek: SessionsPerWeek,
   priorities: SkillPriority[],
 ): SkillArea[][] {
-  const sorted = [...priorities].sort((a, b) => b.score - a.score)
-  const skills = sorted.map((p) => p.skill)
+  const scoreMap = new Map(priorities.map((p) => [p.skill, p.score]))
+  const base = FOCUSED_GROUPINGS[sessionsPerWeek]
 
-  if (sessionsPerWeek === 1) {
-    return [skills]
-  }
-
-  if (sessionsPerWeek === 2) {
-    // Top 2 skills get the first session, bottom 3 share the second
-    return [skills.slice(0, 3), skills.slice(3)]
-  }
-
-  if (sessionsPerWeek === 3) {
-    // Top skill solo, 2nd+3rd together, 4th+5th together
-    return [[skills[0]], [skills[1], skills[2]], [skills[3], skills[4]]]
-  }
-
-  // 4 sessions: top 2 skills solo, 3rd solo, 4th+5th together
-  return [[skills[0]], [skills[1]], [skills[2]], [skills[3], skills[4]]]
+  return base.map((group) =>
+    [...group].sort((a, b) => (scoreMap.get(b) ?? 0) - (scoreMap.get(a) ?? 0)),
+  )
 }
 
 // ─── Mixed mode: all skills every session ────────────────────────────────────
@@ -44,6 +32,37 @@ export function computeAutoGroupings(
 export function computeMixedGroupings(sessionsPerWeek: SessionsPerWeek): SkillArea[][] {
   const allSkills: SkillArea[] = ['teeShot', 'irons', 'shortGame', 'putting', 'courseMgmt']
   return Array.from({ length: sessionsPerWeek }, () => [...allSkills])
+}
+
+// ─── Session labels ──────────────────────────────────────────────────────────
+
+const SKILL_LABELS: Record<SkillArea, string> = {
+  teeShot: 'Tee Shots',
+  irons: 'Iron Play',
+  shortGame: 'Short Game',
+  putting: 'Putting',
+  courseMgmt: 'Course Mgmt',
+}
+
+const RANGE_SKILLS: Set<SkillArea> = new Set(['teeShot', 'irons'])
+
+/** Generate a human-friendly session label like "Driving Range" or "Short Game + Putting". */
+export function getSessionLabel(skills: SkillArea[]): string {
+  if (skills.length === 1) return SKILL_LABELS[skills[0]]
+  if (skills.length >= 5) return 'Full Practice'
+
+  // All range skills (+ maybe courseMgmt) → "Driving Range"
+  if (skills.every((s) => RANGE_SKILLS.has(s) || s === 'courseMgmt')
+      && skills.some((s) => RANGE_SKILLS.has(s))) {
+    return 'Driving Range'
+  }
+
+  // Short game + putting → "Short Game + Putting"
+  if (skills.length === 2 && skills.includes('shortGame') && skills.includes('putting')) {
+    return 'Short Game + Putting'
+  }
+
+  return skills.map((s) => SKILL_LABELS[s]).join(' + ')
 }
 
 // ─── Dispatcher ──────────────────────────────────────────────────────────────

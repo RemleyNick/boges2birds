@@ -40,7 +40,9 @@ export default function RootLayout() {
   useEffect(() => {
     async function init() {
       // 1. DB setup (unchanged)
+      console.log('[init] Running migrations...')
       await runMigrations()
+      console.log('[init] Migrations complete, seeding drills...')
       await seedSystemDrills()
 
       // 2. Check for existing Supabase session

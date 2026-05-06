@@ -82,9 +82,9 @@ export default function GeneratingScreen() {
 
     Promise.all([run(), minDelay])
       .catch((e) => console.error('[generating] Setup error:', e))
-      .finally(async () => {
-        // Show paywall as a conversion opportunity (non-blocking)
-        await showPaywall().catch(() => {})
+      .finally(() => {
+        // Show paywall as a fire-and-forget conversion opportunity
+        showPaywall().catch(() => {})
 
         if (isGuest) {
           router.replace('/(onboarding)/create-account')

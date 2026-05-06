@@ -1,5 +1,5 @@
 import type { Drill, DrillAllocation, ProgramSlug, Session, SessionConfig, SessionType, SkillArea, SkillPriority, TrainingBlock } from '@/types'
-import { MIN_SESSION_DURATION, WEEK_VOLUME } from './thresholds'
+import { MIN_SESSION_DURATION } from './thresholds'
 import { selectDrills } from './drillSelector'
 import { getSessionGroupings } from './skillGrouping'
 
@@ -86,7 +86,7 @@ export function generateBlockStructure(
   let sessionNumber = 1
 
   for (const weekNumber of [1, 2, 3, 4] as const) {
-    const effectiveDuration = Math.round(sessionConfig.sessionDuration * WEEK_VOLUME[weekNumber])
+    const sessionDuration = sessionConfig.sessionDuration
 
     for (let slotIndex = 0; slotIndex < groupings.length; slotIndex++) {
       const skillGroup = groupings[slotIndex]
@@ -98,7 +98,7 @@ export function generateBlockStructure(
       })
 
       // Distribute time across skills within this session
-      const durations = distributeTime(sessionPriorities, effectiveDuration)
+      const durations = distributeTime(sessionPriorities, sessionDuration)
 
       // Select drills for each skill's time slice
       const allDrills: DrillAllocation[] = []
@@ -122,7 +122,7 @@ export function generateBlockStructure(
         sessionType: groupToSessionType(skillGroup),
         primarySkill,
         skills: skillGroup,
-        durationMinutes: effectiveDuration,
+        durationMinutes: sessionDuration,
         drills: allDrills,
       })
 

@@ -4,6 +4,7 @@ import {
   computeAutoGroupings,
   computeMixedGroupings,
   getSessionGroupings,
+  getSessionLabel,
 } from '../skillGrouping'
 
 const ALL_SKILLS: SkillArea[] = ['teeShot', 'irons', 'shortGame', 'putting', 'courseMgmt']
@@ -49,27 +50,49 @@ describe('computeAutoGroupings', () => {
     expect(allSkillsInGrouping.sort()).toEqual([...ALL_SKILLS].sort())
   })
 
-  it('4 sessions: highest-priority skill gets its own session', () => {
-    const grouping = computeAutoGroupings(4, MOCK_PRIORITIES)
-    // putting (highest score) should be solo
-    const puttingSession = grouping.find(
-      (g) => g.length === 1 && g[0] === 'putting',
-    )
-    expect(puttingSession).toBeDefined()
+  it('uses same venue groupings as focused mode', () => {
+    const grouping = computeAutoGroupings(2, MOCK_PRIORITIES)
+    // Should have same group structure as focused: [range+courseMgmt, shortGame+putting]
+    const rangeSession = grouping.find((g) => g.includes('teeShot') && g.includes('irons'))
+    const sgSession = grouping.find((g) => g.includes('shortGame') && g.includes('putting'))
+    expect(rangeSession).toBeDefined()
+    expect(sgSession).toBeDefined()
   })
 
-  it('3 sessions: top skill gets dedicated session', () => {
-    const grouping = computeAutoGroupings(3, MOCK_PRIORITIES)
-    const topSession = grouping.find(
-      (g) => g.length === 1 && g[0] === 'putting',
-    )
-    expect(topSession).toBeDefined()
+  it('reorders skills within groups by priority score', () => {
+    // putting has highest score, but it's in the shortGame+putting group
+    const grouping = computeAutoGroupings(2, MOCK_PRIORITIES)
+    const sgSession = grouping.find((g) => g.includes('shortGame') && g.includes('putting'))!
+    // putting (4.0) should come before shortGame (3.5)
+    expect(sgSession[0]).toBe('putting')
   })
 
-  it('1 session: all skills in one group', () => {
+  it('1 session: all skills in one group sorted by priority', () => {
     const grouping = computeAutoGroupings(1, MOCK_PRIORITIES)
     expect(grouping).toHaveLength(1)
     expect(grouping[0]).toHaveLength(5)
+    // Highest priority first
+    expect(grouping[0][0]).toBe('putting')
+  })
+})
+
+describe('getSessionLabel', () => {
+  it('labels single skill sessions', () => {
+    expect(getSessionLabel(['teeShot'])).toBe('Tee Shots')
+    expect(getSessionLabel(['putting'])).toBe('Putting')
+  })
+
+  it('labels range sessions', () => {
+    expect(getSessionLabel(['teeShot', 'irons'])).toBe('Driving Range')
+    expect(getSessionLabel(['teeShot', 'irons', 'courseMgmt'])).toBe('Driving Range')
+  })
+
+  it('labels short game + putting', () => {
+    expect(getSessionLabel(['shortGame', 'putting'])).toBe('Short Game + Putting')
+  })
+
+  it('labels full practice', () => {
+    expect(getSessionLabel(['teeShot', 'irons', 'shortGame', 'putting', 'courseMgmt'])).toBe('Full Practice')
   })
 })
 

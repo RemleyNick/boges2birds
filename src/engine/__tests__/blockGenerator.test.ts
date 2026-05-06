@@ -5,7 +5,7 @@ import {
   distributeTime,
   generateBlockStructure,
 } from '../blockGenerator'
-import { MIN_SESSION_DURATION, WEEK_VOLUME } from '../thresholds'
+import { MIN_SESSION_DURATION } from '../thresholds'
 
 const MOCK_PRIORITIES: SkillPriority[] = [
   { skill: 'putting',    score: 4.0 },
@@ -197,24 +197,18 @@ describe('generateBlockStructure', () => {
     }
   })
 
-  it('week 3 (peak) has more total time than week 1 (foundation)', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_3x45, 'break90', 1, DRILL_SEEDS)
-    const week1Time = block.sessions
-      .filter((s) => s.weekNumber === 1)
-      .reduce((sum, s) => sum + s.durationMinutes, 0)
-    const week3Time = block.sessions
-      .filter((s) => s.weekNumber === 3)
-      .reduce((sum, s) => sum + s.durationMinutes, 0)
-    expect(week3Time).toBeGreaterThan(week1Time)
+  it('all sessions use the configured session duration', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
+    for (const s of block.sessions) {
+      expect(s.durationMinutes).toBe(60)
+    }
   })
 
-  it('week volume multipliers scale session duration correctly', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
-    const week1Sessions = block.sessions.filter((s) => s.weekNumber === 1)
-    const week3Sessions = block.sessions.filter((s) => s.weekNumber === 3)
-    // Week 1: 60 * 0.6 = 36, Week 3: 60 * 1.0 = 60
-    expect(week1Sessions[0].durationMinutes).toBe(Math.round(60 * WEEK_VOLUME[1]))
-    expect(week3Sessions[0].durationMinutes).toBe(Math.round(60 * WEEK_VOLUME[3]))
+  it('session duration matches config across all weeks', () => {
+    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_3x45, 'break90', 1, DRILL_SEEDS)
+    for (const s of block.sessions) {
+      expect(s.durationMinutes).toBe(45)
+    }
   })
 
   it('sessions have drills array with DrillAllocation shape', () => {

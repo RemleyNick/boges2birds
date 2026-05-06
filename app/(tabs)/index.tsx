@@ -9,15 +9,8 @@ import { useActiveTrainingBlock } from '@/hooks/useActiveTrainingBlock'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useUserStore } from '@/store/userStore'
+import { getSessionLabel } from '@/engine/skillGrouping'
 import type { SkillArea } from '@/types'
-
-const SKILL_LABELS: Record<SkillArea, string> = {
-  teeShot: 'Tee Shots',
-  irons: 'Iron Play',
-  shortGame: 'Short Game',
-  putting: 'Putting',
-  courseMgmt: 'Course Management',
-}
 
 const WEEK_THEMES: Record<number, string> = {
   1: 'Foundation',
@@ -87,9 +80,11 @@ export default function HomeScreen() {
         <Text style={styles.heading}>
           Week {currentWeek} — {WEEK_THEMES[currentWeek]}
         </Text>
-        {weekSessions.map((session) => {
+        {weekSessions.map((session, index) => {
           const isDone = session.status === 'complete'
           const isLocked = !isPremium && currentWeek > 1
+          const skills = (session.skills as SkillArea[] | null) ?? [session.primarySkill as SkillArea]
+          const label = getSessionLabel(skills)
           return (
             <Card
               key={session.id}
@@ -112,9 +107,7 @@ export default function HomeScreen() {
                     />
                   )}
                   <Text style={[styles.skill, isLocked && styles.lockedText]} numberOfLines={1}>
-                    {(session.skills as SkillArea[] | null)?.length
-                      ? (session.skills as SkillArea[]).map((s) => SKILL_LABELS[s]).join(' + ')
-                      : SKILL_LABELS[session.primarySkill as SkillArea]}
+                    Day {index + 1} — {label}
                   </Text>
                 </View>
                 {isLocked ? (

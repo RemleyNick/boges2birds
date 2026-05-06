@@ -2,19 +2,48 @@
 
 **Your personal golf training system.**
 
-A structured golf practice app for players working to Break 100, 90, or 80. Users enroll in a program, complete 4-week training blocks built around their weakest skills, log round stats, and get AI-formatted weekly practice plans.
+A structured golf practice app for players working to Break 100, 90, or 80. Users enroll in a program, configure their practice schedule, complete structured 4-week training blocks built around their weakest skills, log round stats, and get AI-formatted weekly practice plans.
 
 ---
 
 ## Features
 
-- **Break 100 / 90 / 80 programs** — structured 4-week training blocks tailored to your target score
-- **Skill priority engine** — analyzes round stats (fairways, GIR, putts, penalties) to rank what to work on most
-- **AI-formatted practice plans** — OpenAI generates friendly weekly summaries from the structured block data
-- **Round logging** — track scores, fairways hit, GIR, putts, and penalties over time
-- **Drill library** — curated practice drills mapped to skill areas and session types
-- **Offline-first** — everything works without a connection; syncs to the cloud in the background
-- **Freemium with paywall** — Week 1 preview for free; premium unlocks full training blocks, round logging, and drill library
+- **Break 100 / 90 / 80 programs** -- structured 4-week training blocks tailored to your target score
+- **Per-session scheduling** -- choose 1-4 sessions per week, session duration (30/45/60/90 min), and how skills are grouped
+- **Session structure modes** -- Focused (venue-based grouping), Mixed (all skills every session), or Auto (venue-based with priority ordering)
+- **Skill priority engine** -- analyzes round stats (fairways, GIR, putts, penalties) to rank what to work on most
+- **Day-by-day practice plans** -- sessions labeled by activity ("Day 1 -- Driving Range", "Day 2 -- Short Game + Putting")
+- **AI-formatted summaries** -- OpenAI generates friendly weekly summaries from the structured block data
+- **Round logging** -- track scores, fairways hit, GIR, putts, and penalties over time
+- **Drill library** -- curated practice drills mapped to skill areas and session types
+- **Offline-first** -- everything works without a connection; syncs to the cloud in the background
+- **Freemium with paywall** -- Week 1 preview for free; premium unlocks full training blocks
+
+---
+
+## How It Works
+
+1. **Choose a program** -- Break 100, Break 90, or Break 80 based on your scoring goals
+2. **Rate your skills** -- Self-assess across 5 areas: tee shots, iron play, short game, putting, and course management
+3. **Configure your schedule** -- Pick sessions per week, duration per session, and a structure preference
+4. **Get a plan** -- The engine generates a 4-week training block with day-by-day drill assignments
+5. **Practice and log** -- Complete sessions, log rounds, and the engine adapts your next block
+
+### Session Structure Modes
+
+Users choose how skills are grouped across their weekly sessions:
+
+| Structure | Description |
+|-----------|-------------|
+| **Focused** | Skills grouped by venue -- range skills together (tee shots, irons), short game + putting together |
+| **Mixed** | All 5 skills in every session, time split by priority |
+| **Auto** | Venue-based groupings (like focused) with skills reordered by priority within each group |
+
+Example for 2 sessions/week (Focused or Auto):
+- **Day 1 -- Driving Range**: Tee shots, irons, course management
+- **Day 2 -- Short Game + Putting**: Short game, putting
+
+Time within each session is distributed proportionally by priority score -- weaker skills get more practice time.
 
 ---
 
@@ -25,11 +54,14 @@ A structured golf practice app for players working to Break 100, 90, or 80. User
 | Framework | Expo SDK 54 (managed workflow) |
 | Router | Expo Router v6 |
 | Styling | NativeWind v4 + Tailwind CSS v3 |
+| UI State | Zustand v5 |
+| Server State | TanStack Query v5 |
 | Local DB | expo-sqlite + Drizzle ORM |
 | Cloud | Supabase (Postgres + Auth + RLS) |
-| Subscriptions | RevenueCat |
+| Subscriptions | RevenueCat SDK v8 |
 | LLM | OpenAI gpt-4o-mini |
-| Language | TypeScript |
+| Crash Reporting | Sentry |
+| Language | TypeScript v5 |
 
 ---
 
@@ -37,7 +69,7 @@ A structured golf practice app for players working to Break 100, 90, or 80. User
 
 ### Prerequisites
 - Node.js 18+
-- [Expo Go](https://expo.dev/go) on your iOS or Android device (for development)
+- Xcode (for iOS simulator builds)
 
 ### Install
 
@@ -47,13 +79,37 @@ cd boges2birds
 npm install
 ```
 
-### Run
+### Run on Simulator
 
 ```bash
-npx expo start
+# Generate native project
+npx expo prebuild --clean
+
+# Build for simulator
+SENTRY_DISABLE_AUTO_UPLOAD=true xcodebuild \
+  -workspace ios/boges2birds.xcworkspace \
+  -scheme Boges2Birds \
+  -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -derivedDataPath ios/build
+
+# Install and launch
+xcrun simctl install "iPhone 17 Pro" ios/build/Build/Products/Debug-iphonesimulator/Boges2Birds.app
+xcrun simctl launch "iPhone 17 Pro" com.boges2birds.app
+
+# Start Metro bundler
+npx expo start --clear
 ```
 
-Scan the QR code with your camera (iOS) or the Expo Go app (Android).
+> **Note:** RevenueCat requires native modules. Paywall features won't work in Expo Go -- use a dev build or simulator build.
+
+### Tests
+
+```bash
+npx jest
+```
+
+Engine unit tests cover thresholds, skill priority scoring, block generation, skill grouping, drill selection, and session labeling (132 tests).
 
 ### Environment Variables
 
@@ -71,58 +127,96 @@ EXPO_PUBLIC_OPENAI_API_KEY=
 EXPO_PUBLIC_SENTRY_DSN=
 ```
 
-> **Note:** RevenueCat requires native modules. Use `npx expo run:ios` or an EAS dev build — paywall features won't work in Expo Go.
-
 ---
 
 ## Project Structure
 
 ```
-app/                  Expo Router screens
-  (onboarding)/       Program select, assessment, generating
-  (tabs)/             Home, Practice, Log Round, Library, Profile
+app/
+  _layout.tsx                        -- Root Stack + QueryClientProvider + guest user init
+  index.tsx                          -- Welcome screen
+  (auth)/
+    sign-in.tsx                      -- Email + password login
+    sign-up.tsx                      -- Registration + guest migration
+  (onboarding)/
+    program-select.tsx               -- Choose Break 100/90/80
+    baseline-assessment.tsx          -- Skill ratings + session config (sessions/week, duration, structure)
+    create-account.tsx               -- Post-onboarding account creation prompt
+    generating.tsx                   -- Engine runs, saves block to DB
+  practice/
+    [sessionId].tsx                  -- Drill list with checkboxes, session completion
+  (tabs)/
+    index.tsx                        -- Home (weekly session cards: "Day 1 -- Driving Range")
+    log-round.tsx                    -- Round logging form (9/18 holes, stats)
+    library.tsx                      -- Drill library with skill-area filters
+    profile.tsx                      -- Identity, program, skill ratings, session config, round stats
+
 src/
-  engine/             Pure TypeScript business logic (no React)
-  db/                 Drizzle schema + SQLite client + migrations
-  repositories/       CRUD layer per table
-  services/           LLM, sync, auth, subscriptions
-  hooks/              Data fetching + subscription gate
-  components/         UI primitives and screen components
-  constants/          Colors, program config
+  engine/                            -- Pure TypeScript business logic (no React)
+    thresholds.ts                    -- Threshold constants, program multipliers
+    skillPriorityEngine.ts           -- Stat scoring, blending, priority ranking
+    skillGrouping.ts                 -- Session skill groupings (focused/auto/mixed) + labels
+    blockGenerator.ts                -- 4-week block generation, time distribution
+    drillSelector.ts                 -- Maps skill + duration to drill assignments
+    drillSeeds.ts                    -- 25 built-in drills across all skill areas and programs
+  db/
+    schema.ts                        -- Drizzle schema (single source of truth)
+    client.ts                        -- expo-sqlite connection
+    migrations/                      -- SQL migrations
+  repositories/                      -- CRUD layer per table
+  services/
+    auth.ts                          -- Supabase Auth wrapper
+    llm.ts                           -- OpenAI prompt templates + parsing
+    sync.ts                          -- SQLite -> Supabase background sync
+    subscriptions.ts                 -- RevenueCat wrapper
+  hooks/                             -- TanStack Query hooks + mutations
+  store/                             -- Zustand stores (onboarding, user)
+  components/
+    ui/                              -- Reusable primitives (Button, Card, etc.)
+    ErrorBoundary.tsx                -- Sentry-reporting error boundary
+    PaywallModal.tsx                 -- RevenueCat paywall
+  constants/
+    colors.ts                        -- Design tokens
+    programs.ts                      -- Program slugs and config
+  types/
+    index.ts                         -- Shared TypeScript types
 ```
 
 ---
 
 ## Roadmap
 
+### Completed
+
 - [x] Project setup (Expo Router, NativeWind, TypeScript)
 - [x] Welcome screen
 - [x] Skill priority engine + drill selector + block generator
 - [x] Drizzle schema + SQLite migrations + seed data
-- [x] Onboarding flow (program select → assessment → block generation)
-- [x] Home screen (training block overview, session cards)
+- [x] Onboarding flow (program select -> assessment -> block generation)
+- [x] Per-session scheduling (1-4 sessions/week, configurable duration, focused/mixed/auto structure)
+- [x] Home screen (day-by-day session cards with venue labels)
 - [x] Practice session flow (drill checklist, session completion)
 - [x] Round logging (form with input validation)
 - [x] Drill library (skill-area filters, expandable cards)
-- [x] Profile (identity, program, skill ratings, weekly time, round stats)
+- [x] Profile (identity, program, skill ratings, session config, round stats)
 - [x] Auth (sign-up/sign-in, guest migration)
 - [x] RevenueCat subscription + paywall
-- [x] Offline sync (SQLite → Supabase push pipeline)
+- [x] Offline sync (SQLite -> Supabase push pipeline)
 - [x] UI/styling polish
 - [x] EAS build config + app identifiers
 - [x] Error boundary + crash reporting (Sentry)
 - [x] LLM integration (OpenAI gpt-4o-mini)
-- [x] Mutation error handling across screens
 - [x] Apple privacy manifest
-- [x] RevenueCat dashboard setup (create project, configure products in App Store Connect, add real API key to `.env`)
-- [x] Sentry project setup (create project at sentry.io, add DSN to `.env`)
-- [x] EAS credentials (`appleTeamId` + `ascAppId` in `eas.json` submit config)
-- [x] Set price for Premium membership in App Store Connect
-- [x] Add Paywall UI to RevenueCat offering (required for `presentPaywallIfNeeded` to work)
-- [x] Link RevenueCat products to App Store Connect (product IDs `premium_yearly`/`premium_monthly` must match and be "Ready to Submit")
-- [x] First EAS preview build + device testing (`eas build --profile preview`)
-- [ ] Configure Sentry source map upload for production builds (org/project/auth token in EAS env)
-- [ ] Production build + TestFlight (`eas build --profile production` → `eas submit`)
-- [ ] Update App Store link in landing page (`docs/index.html` — replace `href="#"` on the App Store badge once the app is live)
-- [ ] App Store submission
+
+### Next Steps
+
+- [ ] Configure Sentry source map upload for production builds
+- [ ] RevenueCat dashboard setup (create products in App Store Connect, add real API key)
 - [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)
+- [ ] Production build + TestFlight (`eas build --profile production` -> `eas submit`)
+- [ ] App Store submission
+- [ ] Round-over-round progress tracking and visualizations
+- [ ] Block-to-block skill trend analysis
+- [ ] Push notifications for practice reminders
+- [ ] Expanded drill library with video content
+- [ ] Dark mode

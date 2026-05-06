@@ -60,24 +60,30 @@ boges2birds/
 ├── app/
 │   ├── _layout.tsx                   ← Root Stack (imports global.css)
 │   ├── index.tsx                     ← Welcome Screen
-│   ├── (auth)/                       ← sign-in, sign-up (future)
+│   ├── (auth)/
+│   │   ├── sign-in.tsx               ← Email + password login
+│   │   └── sign-up.tsx               ← Registration + guest migration
 │   ├── (onboarding)/
 │   │   ├── program-select.tsx        ← Choose Break 100/90/80
-│   │   ├── baseline-assessment.tsx   ← Self-rating sliders (future)
-│   │   └── generating.tsx            ← Block generation loading (future)
+│   │   ├── baseline-assessment.tsx   ← Skill ratings + session config
+│   │   ├── create-account.tsx        ← Post-onboarding account creation
+│   │   └── generating.tsx            ← Block generation loading
+│   ├── practice/
+│   │   └── [sessionId].tsx           ← Drill checklist + session completion
 │   └── (tabs)/
-│       ├── _layout.tsx               ← Tab bar layout (future)
-│       ├── index.tsx                 ← Home screen (future)
-│       ├── practice.tsx              ← Session start/complete (future)
-│       ├── log-round.tsx             ← Round logging form (future)
-│       ├── library.tsx               ← Drill library (future)
-│       └── profile.tsx               ← Profile + subscription (future)
+│       ├── _layout.tsx               ← Tab bar layout
+│       ├── index.tsx                 ← Home (session cards: "Day 1 — Driving Range")
+│       ├── log-round.tsx             ← Round logging form
+│       ├── library.tsx               ← Drill library with filters
+│       └── profile.tsx               ← Profile + session config + subscription
 ├── src/
 │   ├── engine/
-│   │   ├── thresholds.ts             ← All threshold constants (flat file, no logic)
+│   │   ├── thresholds.ts             ← Threshold constants, program multipliers
 │   │   ├── skillPriorityEngine.ts    ← Core skill ranking logic
-│   │   ├── blockGenerator.ts         ← 4-week session allocation + LLM call
-│   │   └── drillSelector.ts          ← Maps sessions to drills
+│   │   ├── skillGrouping.ts          ← Session skill groupings (focused/auto/mixed) + labels
+│   │   ├── blockGenerator.ts         ← 4-week block generation + time distribution
+│   │   ├── drillSelector.ts          ← Maps sessions to drills
+│   │   └── drillSeeds.ts             ← 25 built-in drills (all skills, all programs)
 │   ├── db/
 │   │   ├── schema.ts                 ← Drizzle schema (single source of truth)
 │   │   ├── client.ts                 ← expo-sqlite connection
@@ -93,15 +99,17 @@ boges2birds/
 │   │   ├── userStore.ts
 │   │   └── onboardingStore.ts
 │   ├── hooks/
-│   │   ├── useTrainingBlock.ts
+│   │   ├── useActiveTrainingBlock.ts  ← TanStack Query hook for active block
+│   │   ├── useSessionDetails.ts      ← Session query + mutations (toggle drill, complete)
+│   │   ├── useDrills.ts              ← All drills query (staleTime: Infinity)
+│   │   ├── useProfile.ts             ← User, assessment, program queries + mutations
 │   │   ├── useRoundLogs.ts
-│   │   ├── useSkillPriorities.ts
-│   │   └── useEntitlement.ts         ← Single subscription gate — all paywall logic here
+│   │   ├── useEntitlement.ts         ← Single subscription gate — all paywall logic here
+│   │   └── usePaywall.ts             ← Paywall presentation hook
 │   ├── components/
 │   │   ├── ui/                       ← Reusable primitives (Button, Card, etc.)
-│   │   ├── home/
-│   │   ├── practice/
-│   │   └── shared/
+│   │   ├── ErrorBoundary.tsx         ← Sentry-reporting error boundary
+│   │   └── PaywallModal.tsx          ← RevenueCat paywall
 │   ├── constants/
 │   │   ├── colors.ts                 ← Color tokens
 │   │   └── programs.ts               ← Program slugs and config
@@ -141,11 +149,11 @@ All tables have `id UUID PK`, `created_at`, `updated_at`. All user-owned tables 
 | Table | Key Columns |
 |---|---|
 | `users` | email, display_name, subscription_status, subscription_expires_at, revenuecat_customer_id |
-| `skill_assessments` | user_id, avg_score, handicap_index, tee_shot_rating, iron_rating, short_game_rating, putting_rating, course_mgmt_rating, weekly_time_available |
+| `skill_assessments` | user_id, avg_score, handicap_index, tee_shot_rating, iron_rating, short_game_rating, putting_rating, course_mgmt_rating, weekly_time_available (deprecated), sessions_per_week, session_duration, session_structure |
 | `programs` | slug ('break100'\|'break90'\|'break80'), display_name, target_avg_score |
 | `user_programs` | user_id, program_id, status ('active'\|'completed'\|'paused'), enrolled_at |
-| `training_blocks` | user_id, block_number, week_start/end_date, skill_priorities (JSON), llm_summary, status |
-| `sessions` | training_block_id, week_number, session_type, primary_skill, scheduled_date, duration_minutes, status |
+| `training_blocks` | user_id, block_number, week_start/end_date, skill_priorities (JSON), session_config (JSON), llm_summary, status |
+| `sessions` | training_block_id, week_number, session_type, primary_skill, skills (JSON SkillArea[]), scheduled_date, duration_minutes, status |
 | `drills` | name, skill_area, session_type, difficulty, duration_minutes, program_slug, instructions, is_system |
 | `session_drills` | session_id, drill_id, order_index, completed |
 | `round_logs` | user_id, played_at, course_name, holes_played, total_score, fairways_hit, fairways_total, gir_hit, gir_total, total_putts, penalties |
@@ -187,20 +195,34 @@ All tables have `id UUID PK`, `created_at`, `updated_at`. All user-owned tables 
 
 ## 4-Week Training Block (`src/engine/blockGenerator.ts`)
 
-### Sessions per week (from `weekly_time_available`)
-- < 60 min → 1 session (mixed)
-- 60–90 min → 2 sessions
-- 91–150 min → 3 sessions
-- 151–240 min → 4 sessions
-- > 240 min → 5 sessions
+### Session configuration
 
-### Weekly progression
-| Week | Theme | Volume |
-|---|---|---|
-| 1 | Foundation | 60% — all skills, beginner drills |
-| 2 | Build | 80% — top 2 skills heavier |
-| 3 | Peak | 100% — top skill intensive |
-| 4 | Consolidate | 70% — on-course application, re-assessment trigger |
+Users configure their practice schedule during onboarding:
+- **Sessions per week**: 1, 2, 3, or 4
+- **Session duration**: 30, 45, 60, or 90 minutes (exact — no volume scaling)
+- **Structure**: Auto, Focused, or Mixed
+
+### Session structure modes (`src/engine/skillGrouping.ts`)
+
+| Mode | Description |
+|---|---|
+| **Focused** | Skills grouped by venue — range skills (teeShot, irons) together, short game + putting together |
+| **Mixed** | All 5 skills in every session, time split by priority |
+| **Auto** | Same venue-based groupings as focused, but skills reordered within each group by priority score |
+
+Focused/Auto groupings for each session count:
+- 1 session: all 5 skills
+- 2 sessions: [teeShot, irons, courseMgmt] + [shortGame, putting]
+- 3 sessions: [teeShot, irons] + [shortGame, putting] + [courseMgmt]
+- 4 sessions: [teeShot] + [irons] + [shortGame, putting] + [courseMgmt]
+
+### Weekly themes
+| Week | Theme |
+|---|---|
+| 1 | Foundation |
+| 2 | Build |
+| 3 | Peak |
+| 4 | Consolidate |
 
 ### LLM integration
 - Engine generates structured JSON → sent to gpt-4o-mini for friendly copy only
@@ -229,14 +251,23 @@ All tables have `id UUID PK`, `created_at`, `updated_at`. All user-owned tables 
 
 ---
 
-## Implementation Sequence
+## Implementation Status
 
-1. **Drizzle schema + SQLite migrations + Supabase setup + Auth** — `src/db/`, `src/services/auth.ts`
-2. **Engine layer with unit tests** — `thresholds.ts`, `skillPriorityEngine.ts`, `blockGenerator.ts`, drill seeds
-3. **Onboarding flow** — Program Select → Baseline Assessment → Generating → Home
-4. **Core screens** — Practice (session start/complete), Log Round, Library, Profile
-5. **RevenueCat + paywall** — `useEntitlement()`, paywall screens
-6. **Offline sync validation + App Store prep**
+All core features are implemented:
+
+1. **Drizzle schema + SQLite migrations + Supabase setup + Auth** — complete
+2. **Engine layer with unit tests** — complete (132 tests passing)
+3. **Onboarding flow** — complete (program select → skill ratings + session config → block generation)
+4. **Core screens** — complete (home, practice, log round, library, profile)
+5. **RevenueCat + paywall** — complete (integration done, dashboard setup pending)
+6. **Offline sync** — complete (SQLite → Supabase push pipeline)
+7. **Per-session scheduling** — complete (1-4 sessions/week, configurable duration, focused/mixed/auto structure)
+
+### Remaining for launch
+- RevenueCat dashboard setup + real API key
+- OpenAI API key for LLM summaries
+- Sentry source map upload configuration
+- Production EAS build + TestFlight + App Store submission
 
 ---
 

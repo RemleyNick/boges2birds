@@ -58,6 +58,8 @@ export default function BaselineAssessmentScreen() {
   const router = useRouter()
   const { context } = useLocalSearchParams<{ context?: string }>()
   const isReassess = context === 'reassess'
+  const isNewBlock = context === 'newblock'
+  const shouldPrefill = isReassess || isNewBlock
   const {
     skillRatings,
     sessionsPerWeek,
@@ -70,11 +72,11 @@ export default function BaselineAssessmentScreen() {
   } = useOnboardingStore()
   const userId = useUserStore((s) => s.userId)
   const queryClient = useQueryClient()
-  const { data: latestAssessment } = useLatestAssessment(isReassess ? userId : null)
+  const { data: latestAssessment } = useLatestAssessment(shouldPrefill ? userId : null)
 
   // Pre-populate onboarding store with existing assessment values when reassessing
   useEffect(() => {
-    if (!isReassess || !latestAssessment) return
+    if (!shouldPrefill || !latestAssessment) return
     if (latestAssessment.teeShotRating != null) setSkillRating('teeShot', latestAssessment.teeShotRating)
     if (latestAssessment.ironRating != null) setSkillRating('irons', latestAssessment.ironRating)
     if (latestAssessment.shortGameRating != null) setSkillRating('shortGame', latestAssessment.shortGameRating)
@@ -83,7 +85,7 @@ export default function BaselineAssessmentScreen() {
     if (latestAssessment.sessionsPerWeek) setSessionsPerWeek(latestAssessment.sessionsPerWeek as SessionsPerWeek)
     if (latestAssessment.sessionDuration) setSessionDuration(latestAssessment.sessionDuration as SessionDuration)
     if (latestAssessment.sessionStructure) setSessionStructure(latestAssessment.sessionStructure as SessionStructure)
-  }, [isReassess, latestAssessment])
+  }, [shouldPrefill, latestAssessment])
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
   if (!lilitaLoaded) return null
@@ -109,12 +111,18 @@ export default function BaselineAssessmentScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>
-          {isReassess ? 'Re-assess your game' : 'Rate your game'}
+          {isNewBlock
+            ? 'Re-rate your game'
+            : isReassess
+              ? 'Re-assess your game'
+              : 'Rate your game'}
         </Text>
         <Text style={styles.subtitle}>
-          {isReassess
-            ? 'Update your ratings to refine future training blocks.'
-            : 'Be honest — this builds your first training block.'}
+          {isNewBlock
+            ? 'Update your ratings so the next 4 weeks target where you are now.'
+            : isReassess
+              ? 'Update your ratings to refine future training blocks.'
+              : 'Be honest — this builds your first training block.'}
         </Text>
 
         <View style={styles.section}>
@@ -217,7 +225,16 @@ export default function BaselineAssessmentScreen() {
         <TouchableOpacity
           style={[styles.buildButton, !canProceed && styles.buildButtonDisabled]}
           onPress={async () => {
-            if (isReassess && userId && sessionsPerWeek && sessionDuration && sessionStructure) {
+            if (isNewBlock && userId && sessionsPerWeek && sessionDuration && sessionStructure) {
+              const sessionConfig: SessionConfig = {
+                sessionsPerWeek,
+                sessionDuration,
+                structure: sessionStructure,
+              }
+              await saveSkillAssessment(userId, skillRatings as SkillRatings, sessionConfig)
+              queryClient.invalidateQueries({ queryKey: ['latest-assessment'] })
+              router.replace('/(onboarding)/generating?context=newblock')
+            } else if (isReassess && userId && sessionsPerWeek && sessionDuration && sessionStructure) {
               const sessionConfig: SessionConfig = {
                 sessionsPerWeek,
                 sessionDuration,
@@ -234,7 +251,7 @@ export default function BaselineAssessmentScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.buildButtonText}>
-            {isReassess ? 'Save Ratings' : 'Build My Plan'}
+            {isNewBlock ? 'Build Next Block' : isReassess ? 'Save Ratings' : 'Build My Plan'}
           </Text>
         </TouchableOpacity>
       </ScrollView>

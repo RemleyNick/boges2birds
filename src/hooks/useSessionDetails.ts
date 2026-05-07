@@ -52,6 +52,7 @@ export function useCompleteSession(sessionId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
       queryClient.invalidateQueries({ queryKey: ['active-block'] })
+      queryClient.invalidateQueries({ queryKey: ['latest-block'] })
     },
   })
 }

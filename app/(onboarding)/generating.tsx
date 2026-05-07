@@ -2,7 +2,8 @@ import {
   LilitaOne_400Regular,
   useFonts as useLilita,
 } from '@expo-google-fonts/lilita-one'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
 
@@ -14,16 +15,24 @@ import { generateBlockStructure, enrichWithLLMSummary } from '@/engine/blockGene
 import { computeSkillPriorities } from '@/engine/skillPriorityEngine'
 import { saveSkillAssessment } from '@/repositories/skillAssessmentsRepo'
 import { enrollInProgram } from '@/repositories/userProgramsRepo'
-import { saveTrainingBlock } from '@/repositories/trainingBlocksRepo'
+import {
+  getDrillIdsForBlock,
+  getLatestBlock,
+  saveTrainingBlock,
+} from '@/repositories/trainingBlocksRepo'
+import { getActiveUserProgram } from '@/repositories/profileRepo'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { useUserStore } from '@/store/userStore'
-import type { SessionConfig, SkillRatings } from '@/types'
+import type { ProgramSlug, SessionConfig, SkillRatings } from '@/types'
 import { eq } from 'drizzle-orm'
 
 export default function GeneratingScreen() {
   const router = useRouter()
+  const { context } = useLocalSearchParams<{ context?: string }>()
+  const isNewBlock = context === 'newblock'
   const { showPaywall } = usePaywall()
+  const queryClient = useQueryClient()
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular })
 
   // Three pulsing dots
@@ -59,11 +68,39 @@ export default function GeneratingScreen() {
         structure: sessionStructure!,
       }
 
-      const priorities = computeSkillPriorities([], skillRatings as SkillRatings, program!)
-      const block = generateBlockStructure(priorities, sessionConfig, program!, 1, DRILL_SEEDS)
+      let blockProgram: ProgramSlug
+      let blockNumber: number
+      let previousDrillIds: Set<string> | undefined
 
-      await saveSkillAssessment(userId, skillRatings as SkillRatings, sessionConfig)
-      await enrollInProgram(userId, program!)
+      if (isNewBlock) {
+        const activeProgram = await getActiveUserProgram(userId)
+        if (!activeProgram) throw new Error('No active program found for user')
+        blockProgram = activeProgram.programSlug as ProgramSlug
+
+        const lastBlock = await getLatestBlock(userId)
+        blockNumber = (lastBlock?.blockNumber ?? 0) + 1
+        previousDrillIds = lastBlock
+          ? await getDrillIdsForBlock(lastBlock.id)
+          : undefined
+      } else {
+        blockProgram = program!
+        blockNumber = 1
+      }
+
+      const priorities = computeSkillPriorities([], skillRatings as SkillRatings, blockProgram)
+      const block = generateBlockStructure(
+        priorities,
+        sessionConfig,
+        blockProgram,
+        blockNumber,
+        DRILL_SEEDS,
+        previousDrillIds,
+      )
+
+      if (!isNewBlock) {
+        await saveSkillAssessment(userId, skillRatings as SkillRatings, sessionConfig)
+        await enrollInProgram(userId, blockProgram)
+      }
       const blockId = await saveTrainingBlock(userId, block, sessionConfig)
 
       // Fire-and-forget LLM enrichment
@@ -75,6 +112,9 @@ export default function GeneratingScreen() {
         )
         .catch(() => {}) // silent fail; template summary is already saved
 
+      queryClient.invalidateQueries({ queryKey: ['active-block'] })
+      queryClient.invalidateQueries({ queryKey: ['latest-block'] })
+
       useOnboardingStore.getState().reset()
     }
 
@@ -83,6 +123,11 @@ export default function GeneratingScreen() {
     Promise.all([run(), minDelay])
       .catch((e) => console.error('[generating] Setup error:', e))
       .finally(() => {
+        if (isNewBlock) {
+          router.replace('/(tabs)')
+          return
+        }
+
         // Show paywall as a fire-and-forget conversion opportunity
         showPaywall().catch(() => {})
 
@@ -92,13 +137,15 @@ export default function GeneratingScreen() {
           router.replace('/(tabs)')
         }
       })
-  }, [router])
+  }, [router, isNewBlock])
 
   if (!lilitaLoaded) return null
 
   return (
     <View style={styles.root}>
-      <Text style={styles.heading}>Building your plan...</Text>
+      <Text style={styles.heading}>
+        {isNewBlock ? 'Building your next block...' : 'Building your plan...'}
+      </Text>
       <View style={styles.dots}>
         <Animated.View style={[styles.dot, { opacity: dot1 }]} />
         <Animated.View style={[styles.dot, { opacity: dot2 }]} />

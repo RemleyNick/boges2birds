@@ -80,6 +80,7 @@ export function generateBlockStructure(
   program: ProgramSlug,
   blockNumber: number,
   drillPool: Drill[],
+  previousDrillIds?: ReadonlySet<string>,
 ): TrainingBlock {
   const groupings = getSessionGroupings(sessionConfig, priorities)
   const sessions: Session[] = []
@@ -105,7 +106,7 @@ export function generateBlockStructure(
       for (let i = 0; i < skillGroup.length; i++) {
         const skill = skillGroup[i]
         const skillDuration = durations[i]
-        const selectedDrills = selectDrills(skill, program, skillDuration, drillPool)
+        const selectedDrills = selectDrills(skill, program, skillDuration, drillPool, previousDrillIds)
         for (const sd of selectedDrills) {
           allDrills.push({
             drillId: sd.drill.id,

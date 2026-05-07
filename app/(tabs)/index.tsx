@@ -5,7 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { Button, Card } from '@/components/ui'
 import { colors } from '@/constants/colors'
-import { useActiveTrainingBlock } from '@/hooks/useActiveTrainingBlock'
+import { useActiveTrainingBlock, useLatestBlock } from '@/hooks/useActiveTrainingBlock'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
 import { useUserStore } from '@/store/userStore'
@@ -23,6 +23,7 @@ export default function HomeScreen() {
   const router = useRouter()
   const userId = useUserStore((s) => s.userId)
   const { data: blockData, isLoading, isError, refetch } = useActiveTrainingBlock(userId)
+  const { data: latestBlock } = useLatestBlock(userId)
   const { isPremium } = useEntitlement()
   const { showPaywall } = usePaywall()
 
@@ -62,6 +63,39 @@ export default function HomeScreen() {
   }
 
   if (!blockData) {
+    if (latestBlock && latestBlock.status === 'completed') {
+      const completedSessionCount = latestBlock.sessions.filter(
+        (s) => s.status === 'complete',
+      ).length
+      return (
+        <SafeAreaView style={styles.root}>
+          <View style={styles.empty}>
+            <Ionicons
+              name="trophy"
+              size={48}
+              color={colors.accent}
+              style={{ marginBottom: 12 }}
+            />
+            <Text style={styles.emptyTitle}>
+              Block {latestBlock.blockNumber} complete — nice work.
+            </Text>
+            <Text style={styles.emptyBody}>
+              {completedSessionCount} sessions logged. Re-rate your skills to
+              build your next 4-week block.
+            </Text>
+            <Button
+              title={`Start Block ${latestBlock.blockNumber + 1}`}
+              onPress={() =>
+                router.push('/(onboarding)/baseline-assessment?context=newblock')
+              }
+              fullWidth={false}
+              style={{ marginTop: 20 }}
+            />
+          </View>
+        </SafeAreaView>
+      )
+    }
+
     return (
       <SafeAreaView style={styles.root}>
         <View style={styles.empty}>

@@ -62,6 +62,38 @@ describe('selectDrills', () => {
     expect(result[0].shotCountOverride).toBeGreaterThanOrEqual(1)
   })
 
+  it('prefers un-used drills when previousDrillIds is provided', () => {
+    const pool: Drill[] = [
+      { id: 'a', name: 'A', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'b', name: 'B', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'c', name: 'C', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'd', name: 'D', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+    ]
+
+    // Block 1 (no previousDrillIds) picks alphabetical first 3: a, b, c
+    const block1 = selectDrills('putting', 'break100', 45, pool)
+    const block1Ids = block1.map((sd) => sd.drill.id)
+    expect(block1Ids).toEqual(['a', 'b', 'c'])
+
+    // Block 2 with block1 as previousDrillIds should prefer 'd' first
+    const block2 = selectDrills('putting', 'break100', 45, pool, new Set(block1Ids))
+    const block2Ids = block2.map((sd) => sd.drill.id)
+    expect(block2Ids[0]).toBe('d')
+  })
+
+  it('falls back to used drills when un-used candidates are exhausted', () => {
+    const pool: Drill[] = [
+      { id: 'a', name: 'A', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'b', name: 'B', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'c', name: 'C', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+    ]
+
+    // 3-drill pool, all marked used → still returns all 3 (graceful degradation)
+    const result = selectDrills('putting', 'break100', 45, pool, new Set(['a', 'b', 'c']))
+    expect(result).toHaveLength(3)
+    expect(result.map((sd) => sd.drill.id).sort()).toEqual(['a', 'b', 'c'])
+  })
+
   it('splits time evenly so no drill gets a tiny sliver', () => {
     // Regression: 21-min short_game previously produced 20 min + 1 min split
     const result = selectDrills('shortGame', 'break100', 21, DRILL_SEEDS)

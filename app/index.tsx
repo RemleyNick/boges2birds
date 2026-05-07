@@ -8,21 +8,27 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui";
 import { colors } from "@/constants/colors";
 import { FONT, SPACING } from "@/constants/tokens";
+import { useActiveTrainingBlock, useLatestBlock } from "@/hooks/useActiveTrainingBlock";
 import { useUserStore } from "@/store/userStore";
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const isAuthReady = useUserStore((s) => s.isAuthReady);
   const isGuest = useUserStore((s) => s.isGuest);
+  const userId = useUserStore((s) => s.userId);
+  const { data: activeBlock } = useActiveTrainingBlock(isAuthReady ? userId : null);
+  const { data: latestBlock } = useLatestBlock(isAuthReady ? userId : null);
 
   const [lilitaLoaded] = useLilita({ LilitaOne_400Regular });
 
-  // Redirect authenticated users straight to tabs
+  // Redirect to Home when the user already has training data — applies to
+  // signed-in users and to returning guests who completed onboarding.
   useEffect(() => {
-    if (isAuthReady && !isGuest) {
+    if (!isAuthReady) return;
+    if (!isGuest || activeBlock || latestBlock) {
       router.replace("/(tabs)");
     }
-  }, [isAuthReady, isGuest]);
+  }, [isAuthReady, isGuest, activeBlock, latestBlock]);
 
   if (!lilitaLoaded) return null;
 

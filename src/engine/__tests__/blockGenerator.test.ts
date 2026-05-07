@@ -229,6 +229,50 @@ describe('generateBlockStructure', () => {
       expect(s.drills.length).toBeGreaterThan(0)
     }
   })
+
+  it('previousDrillIds biases away from already-used drills (4-drill cells)', () => {
+    // break90 has 4-drill cells for putting and shortGame, so block 2 should
+    // surface at least one drill not seen in block 1.
+    const block1 = generateBlockStructure(MOCK_PRIORITIES, CONFIG_4x60, 'break90', 1, DRILL_SEEDS)
+    const block1DrillIds = new Set(
+      block1.sessions.flatMap((s) => s.drills.map((d) => d.drillId)),
+    )
+
+    const block2 = generateBlockStructure(
+      MOCK_PRIORITIES, CONFIG_4x60, 'break90', 2, DRILL_SEEDS, block1DrillIds,
+    )
+
+    const newDrills = block2.sessions
+      .flatMap((s) => s.drills.map((d) => d.drillId))
+      .filter((id) => !block1DrillIds.has(id))
+    expect(newDrills.length).toBeGreaterThan(0)
+  })
+
+  it('previousDrillIds never increases overlap with the previous block', () => {
+    // Even when pool sizes are tight (break100 = 3 drills per cell), the
+    // exclusion-aware block must overlap the previous block ≤ a block
+    // generated without exclusion.
+    const block1 = generateBlockStructure(MOCK_PRIORITIES, CONFIG_4x60, 'break100', 1, DRILL_SEEDS)
+    const block1DrillIds = new Set(
+      block1.sessions.flatMap((s) => s.drills.map((d) => d.drillId)),
+    )
+
+    const block2WithExclusion = generateBlockStructure(
+      MOCK_PRIORITIES, CONFIG_4x60, 'break100', 2, DRILL_SEEDS, block1DrillIds,
+    )
+    const block2WithoutExclusion = generateBlockStructure(
+      MOCK_PRIORITIES, CONFIG_4x60, 'break100', 2, DRILL_SEEDS,
+    )
+
+    const overlapWith = block2WithExclusion.sessions
+      .flatMap((s) => s.drills.map((d) => d.drillId))
+      .filter((id) => block1DrillIds.has(id)).length
+    const overlapWithout = block2WithoutExclusion.sessions
+      .flatMap((s) => s.drills.map((d) => d.drillId))
+      .filter((id) => block1DrillIds.has(id)).length
+
+    expect(overlapWith).toBeLessThanOrEqual(overlapWithout)
+  })
 })
 
 describe('buildTemplateSummary', () => {

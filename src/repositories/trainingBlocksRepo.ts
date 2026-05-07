@@ -3,7 +3,7 @@ import { db } from '@/db/client'
 import { sessions as sessionsTable, sessionDrills, trainingBlocks } from '@/db/schema'
 import type { SessionRow, TrainingBlockRow } from '@/db/schema'
 import type { ProgramSlug, SessionConfig, SkillArea, SkillPriority, TrainingBlock } from '@/types'
-import { logSyncEntries } from '@/repositories/syncLogHelper'
+import { logSyncEntries, logSyncEntry } from '@/repositories/syncLogHelper'
 import { distributeTime } from '@/engine/blockGenerator'
 import { selectDrills } from '@/engine/drillSelector'
 import { WEEK_VOLUME } from '@/engine/thresholds'
@@ -107,6 +107,48 @@ export async function getActiveTrainingBlock(
     .orderBy(sessionsTable.weekNumber, sessionsTable.sessionNumber)
 
   return { ...block, sessions: blockSessions }
+}
+
+export async function getLatestBlock(
+  userId: string,
+): Promise<ActiveTrainingBlock | null> {
+  const block = await db
+    .select()
+    .from(trainingBlocks)
+    .where(eq(trainingBlocks.userId, userId))
+    .orderBy(desc(trainingBlocks.createdAt))
+    .get()
+
+  if (!block) return null
+
+  const blockSessions = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.trainingBlockId, block.id))
+    .orderBy(sessionsTable.weekNumber, sessionsTable.sessionNumber)
+
+  return { ...block, sessions: blockSessions }
+}
+
+export async function getDrillIdsForBlock(blockId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ drillId: sessionDrills.drillId })
+    .from(sessionDrills)
+    .innerJoin(sessionsTable, eq(sessionDrills.sessionId, sessionsTable.id))
+    .where(eq(sessionsTable.trainingBlockId, blockId))
+
+  return new Set(rows.map((r) => r.drillId))
+}
+
+export async function updateTrainingBlockStatus(
+  blockId: string,
+  status: 'active' | 'completed',
+): Promise<void> {
+  await db
+    .update(trainingBlocks)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(trainingBlocks.id, blockId))
+  await logSyncEntry('training_blocks', blockId, 'update')
 }
 
 /**

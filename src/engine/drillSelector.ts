@@ -19,6 +19,7 @@ export function selectDrills(
   program: ProgramSlug,
   durationMinutes: number,
   drillPool: Drill[],
+  previousDrillIds?: ReadonlySet<string>,
 ): SelectedDrill[] {
   const candidates = drillPool.filter(
     (d) => d.skillArea === primarySkill && d.programSlugs.includes(program),
@@ -26,7 +27,15 @@ export function selectDrills(
 
   if (candidates.length === 0) return []
 
-  const sorted = [...candidates].sort((a, b) => a.id.localeCompare(b.id))
+  // Sort un-used drills first (when previousDrillIds is provided) so block N+1
+  // rotates away from block N's drills where the pool is large enough; falls
+  // back to alphabetical when the pool is exhausted.
+  const sorted = [...candidates].sort((a, b) => {
+    const aUsed = previousDrillIds?.has(a.id) ? 1 : 0
+    const bUsed = previousDrillIds?.has(b.id) ? 1 : 0
+    if (aUsed !== bUsed) return aUsed - bUsed
+    return a.id.localeCompare(b.id)
+  })
   const rate = MIN_PER_SHOT[primarySkill]
 
   // Pre-determine how many drills to use: at least 1, at most 3,

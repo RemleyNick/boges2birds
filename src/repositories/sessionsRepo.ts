@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { db } from '@/db/client'
-import { drills, sessionDrills, sessions } from '@/db/schema'
+import { drills, sessionDrills, sessions, trainingBlocks } from '@/db/schema'
 import type { DrillRow, SessionDrill, SessionRow } from '@/db/schema'
 import { logSyncEntry } from './syncLogHelper'
 
@@ -50,9 +50,36 @@ export async function toggleDrillComplete(
 }
 
 export async function completeSession(sessionId: string): Promise<void> {
+  const now = new Date()
   await db
     .update(sessions)
-    .set({ status: 'complete', updatedAt: new Date() })
+    .set({ status: 'complete', updatedAt: now })
     .where(eq(sessions.id, sessionId))
   await logSyncEntry('sessions', sessionId, 'update')
+
+  const session = await db
+    .select({ trainingBlockId: sessions.trainingBlockId })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .get()
+  if (!session) return
+
+  const incomplete = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.trainingBlockId, session.trainingBlockId),
+        ne(sessions.status, 'complete'),
+      ),
+    )
+    .get()
+
+  if (incomplete) return
+
+  await db
+    .update(trainingBlocks)
+    .set({ status: 'completed', updatedAt: now })
+    .where(eq(trainingBlocks.id, session.trainingBlockId))
+  await logSyncEntry('training_blocks', session.trainingBlockId, 'update')
 }

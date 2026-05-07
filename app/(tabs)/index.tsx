@@ -28,10 +28,14 @@ export default function HomeScreen() {
   const { showPaywall } = usePaywall()
 
   const currentWeek = (() => {
-    if (!blockData?.weekStartDate) return 1
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000
-    const elapsed = Date.now() - new Date(blockData.weekStartDate).getTime()
-    return Math.max(1, Math.min(4, Math.floor(elapsed / msPerWeek) + 1))
+    if (!blockData) return 1
+    for (const wk of [1, 2, 3, 4] as const) {
+      const hasPending = blockData.sessions.some(
+        (s) => s.weekNumber === wk && s.status !== 'complete',
+      )
+      if (hasPending) return wk
+    }
+    return 4
   })()
   const weekSessions = blockData?.sessions.filter((s) => s.weekNumber === currentWeek) ?? []
 

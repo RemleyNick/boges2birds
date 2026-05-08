@@ -21,6 +21,7 @@ export async function seedSystemDrills(): Promise<void> {
     shotCount: d.shotCount,
     programSlugs: d.programSlugs,
     instructions: d.instructions,
+    equipment: d.equipment,
     isSystem: true,
     createdAt: now,
     updatedAt: now,
@@ -37,6 +38,7 @@ export async function seedSystemDrills(): Promise<void> {
         shotCount: sql`excluded.shot_count`,
         instructions: sql`excluded.instructions`,
         programSlugs: sql`excluded.program_slugs`,
+        equipment: sql`excluded.equipment`,
         updatedAt: now,
       },
     })

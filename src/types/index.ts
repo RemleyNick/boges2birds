@@ -71,6 +71,7 @@ export interface Drill {
   shotCount: number
   programSlugs: ProgramSlug[]
   instructions: string
+  equipment: string[]
 }
 
 export interface DrillAllocation {

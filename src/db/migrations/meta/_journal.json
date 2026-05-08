@@ -15,6 +15,13 @@
       "when": 1772373940176,
       "tag": "0001_shot_count_scaling",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778659200000,
+      "tag": "0002_drill_equipment",
+      "breakpoints": true
     }
   ]
 }

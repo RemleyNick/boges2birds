@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 
 import { colors } from '@/constants/colors'
 import { resolveInstructions } from '@/engine/drillInstructions'
+import { rollupEquipment } from '@/engine/equipmentRollup'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
 import {
@@ -44,6 +45,11 @@ export default function PracticeScreen() {
   const isComplete = session?.status === 'complete'
   const isReadOnly = !isPremium && (session?.weekNumber ?? 1) === 1
   const isLockedWeek = !isPremium && (session?.weekNumber ?? 1) > 1
+
+  const equipment = useMemo(
+    () => rollupEquipment(session?.drills.map((sd) => sd.drill) ?? []),
+    [session?.drills],
+  )
 
   function handleToggleDrill(sessionDrillId: string, currentlyCompleted: boolean) {
     if (isComplete || isReadOnly) return
@@ -133,6 +139,19 @@ export default function PracticeScreen() {
 
       {/* Drill List */}
       <ScrollView contentContainerStyle={styles.drillList}>
+        {equipment.length > 0 && (
+          <View style={styles.equipmentCard}>
+            <Text style={styles.equipmentTitle}>Equipment needed</Text>
+            <View style={styles.equipmentChips}>
+              {equipment.map((item) => (
+                <View key={item} style={styles.equipmentChip}>
+                  <Text style={styles.equipmentChipText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {session.drills.map((sd) => {
           const isExpanded = expandedDrillId === sd.id
           return (
@@ -250,6 +269,35 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
     paddingBottom: 100,
+  },
+  equipmentCard: {
+    backgroundColor: colors.cardBg,
+    borderRadius: 12,
+    padding: 16,
+    gap: 10,
+  },
+  equipmentTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  equipmentChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  equipmentChip: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  equipmentChipText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: '500',
   },
   drillCard: {
     backgroundColor: colors.cardBg,

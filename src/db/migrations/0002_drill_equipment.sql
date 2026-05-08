@@ -1,0 +1,1 @@
+ALTER TABLE drills ADD COLUMN equipment TEXT NOT NULL DEFAULT '[]';

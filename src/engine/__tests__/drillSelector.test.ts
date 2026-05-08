@@ -64,10 +64,10 @@ describe('selectDrills', () => {
 
   it('prefers un-used drills when previousDrillIds is provided', () => {
     const pool: Drill[] = [
-      { id: 'a', name: 'A', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
-      { id: 'b', name: 'B', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
-      { id: 'c', name: 'C', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
-      { id: 'd', name: 'D', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'a', name: 'A', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
+      { id: 'b', name: 'B', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
+      { id: 'c', name: 'C', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
+      { id: 'd', name: 'D', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
     ]
 
     // Block 1 (no previousDrillIds) picks alphabetical first 3: a, b, c
@@ -83,9 +83,9 @@ describe('selectDrills', () => {
 
   it('falls back to used drills when un-used candidates are exhausted', () => {
     const pool: Drill[] = [
-      { id: 'a', name: 'A', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
-      { id: 'b', name: 'B', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
-      { id: 'c', name: 'C', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '' },
+      { id: 'a', name: 'A', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
+      { id: 'b', name: 'B', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
+      { id: 'c', name: 'C', skillArea: 'putting', sessionType: 'putting', durationMinutes: 15, shotCount: 20, programSlugs: ['break100'], instructions: '', equipment: [] },
     ]
 
     // 3-drill pool, all marked used → still returns all 3 (graceful degradation)

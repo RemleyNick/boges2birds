@@ -1,5 +1,5 @@
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import type { ProgramSlug, SessionConfig, SkillArea, SkillPriority } from '@/types'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -142,6 +142,11 @@ export const drills = sqliteTable('drills', {
     .notNull()
     .$defaultFn(() => []),
   instructions: text('instructions').notNull(),
+  // JSON array of equipment tags (e.g., ['alignment sticks', 'towel'])
+  equipment: text('equipment', { mode: 'json' })
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'`),
   isSystem: integer('is_system', { mode: 'boolean' }).notNull().default(true),
   ...timestamps,
 })

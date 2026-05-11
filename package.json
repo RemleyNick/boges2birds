@@ -28,7 +28,7 @@
     "expo-status-bar": "~3.0.9",
     "jest-expo": "~54.0.17",
     "nativewind": "^4.1.23",
-    "react": "19.1.0",
+    "react": "19.2.4",
     "react-native": "0.81.5",
     "react-native-purchases": "^9.10.5",
     "react-native-purchases-ui": "^9.10.5",
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/react": "~19.1.10",
+    "@types/react": "~19.2.14",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.9",
     "jest": "^30.2.0",

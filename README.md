@@ -18,6 +18,7 @@ A structured golf practice app for players working to Break 100, 90, or 80. User
 - **Drill library** -- curated practice drills mapped to skill areas and session types
 - **Offline-first** -- everything works without a connection; syncs to the cloud in the background
 - **Freemium with paywall** -- Week 1 preview for free; premium unlocks full training blocks
+- **In-app feedback** -- users report bugs or suggest improvements from Profile; submissions email the developer via Resend
 
 ---
 
@@ -61,6 +62,7 @@ Time within each session is distributed proportionally by priority score -- weak
 | Subscriptions | RevenueCat SDK v8 |
 | LLM | OpenAI gpt-4o-mini |
 | Crash Reporting | Sentry |
+| Transactional Email | Resend (feedback notifications) |
 | Language | TypeScript v5 |
 
 ---
@@ -127,6 +129,34 @@ EXPO_PUBLIC_OPENAI_API_KEY=
 EXPO_PUBLIC_SENTRY_DSN=
 ```
 
+### Feedback Email (Resend)
+
+The Profile → Send feedback form writes to a Supabase `feedback` table. A Postgres trigger calls the `notify-feedback` Edge Function, which forwards the submission to the developer via [Resend](https://resend.com).
+
+The Edge Function reads three secrets, set in Supabase (not in `.env` -- they live server-side):
+
+```bash
+supabase secrets set \
+  RESEND_API_KEY=re_xxx \
+  FEEDBACK_RECIPIENT_EMAIL=you@example.com \
+  FEEDBACK_FROM_EMAIL=onboarding@resend.dev
+```
+
+#### Verify a custom Resend sender domain (recommended for production)
+
+`onboarding@resend.dev` works out of the box but only delivers to the email address tied to your Resend account. To send from a real address like `feedback@boges2birds.com` and reach any inbox, verify a domain you own:
+
+1. **Add the domain in Resend**: https://resend.com/domains → **Add Domain** → enter your domain (e.g., `boges2birds.com`). Pick a region close to your Supabase project.
+2. **Copy the DNS records Resend generates** (3-5 records: SPF/TXT, DKIM CNAMEs, optionally DMARC).
+3. **Add them at your DNS provider** (Cloudflare, Namecheap, GoDaddy, Route 53, etc.). Use the exact host/value Resend provides; do not append the apex domain if your provider does that automatically.
+4. **Wait for verification** -- usually a few minutes, sometimes hours depending on propagation. Resend's domains page polls automatically and turns green when ready.
+5. **Update the Supabase secret to point at the verified address** (no function redeploy needed -- secrets are read at request time):
+   ```bash
+   supabase secrets set FEEDBACK_FROM_EMAIL=feedback@boges2birds.com
+   ```
+
+Until a domain is verified, leave `FEEDBACK_FROM_EMAIL=onboarding@resend.dev`.
+
 ---
 
 ## Project Structure
@@ -145,6 +175,7 @@ app/
     generating.tsx                   -- Engine runs, saves block to DB
   practice/
     [sessionId].tsx                  -- Drill list with checkboxes, session completion
+  feedback.tsx                       -- Bug report / improvement request form (calls submit_feedback RPC)
   (tabs)/
     index.tsx                        -- Home (weekly session cards: "Day 1 -- Driving Range")
     log-round.tsx                    -- Round logging form (9/18 holes, stats)
@@ -169,6 +200,12 @@ src/
     llm.ts                           -- OpenAI prompt templates + parsing
     sync.ts                          -- SQLite -> Supabase background sync
     subscriptions.ts                 -- RevenueCat wrapper
+    feedback.ts                      -- submit_feedback RPC client + diagnostics gathering
+
+supabase/
+  migrations/                        -- Supabase Postgres schema (SQL)
+  functions/
+    notify-feedback/                 -- Edge Function: webhook -> Resend on new feedback row
   hooks/                             -- TanStack Query hooks + mutations
   store/                             -- Zustand stores (onboarding, user)
   components/
@@ -207,9 +244,11 @@ src/
 - [x] Error boundary + crash reporting (Sentry)
 - [x] LLM integration (OpenAI gpt-4o-mini)
 - [x] Apple privacy manifest
+- [x] In-app feedback form (Supabase RPC + Resend email pipeline)
 
 ### Next Steps
 
+- [ ] Verify a custom Resend sender domain so feedback emails come from `feedback@boges2birds.com` (currently `onboarding@resend.dev`, account-only delivery)
 - [ ] Configure Sentry source map upload for production builds
 - [ ] RevenueCat dashboard setup (create products in App Store Connect, add real API key)
 - [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)

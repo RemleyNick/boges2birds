@@ -340,6 +340,16 @@ export default function ProfileScreen() {
           )}
         </Card>
 
+        {/* ─── Feedback ───────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.accountRow}
+          onPress={() => router.push('/feedback')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.feedbackText}>Send feedback</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+        </TouchableOpacity>
+
         {/* ─── Account Actions ────────────────────────────── */}
         {isGuest ? (
           <TouchableOpacity
@@ -534,6 +544,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   createAccountText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.accent,
+  },
+  feedbackText: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.accent,

@@ -155,7 +155,7 @@ supabase secrets set \
    supabase secrets set FEEDBACK_FROM_EMAIL=feedback@boges2birds.com
    ```
 
-Until a domain is verified, leave `FEEDBACK_FROM_EMAIL=onboarding@resend.dev`.
+Production currently uses `feedback@boges2birds.com`. New environments can stay on `onboarding@resend.dev` until they verify a custom domain.
 
 ---
 
@@ -245,10 +245,10 @@ supabase/
 - [x] LLM integration (OpenAI gpt-4o-mini)
 - [x] Apple privacy manifest
 - [x] In-app feedback form (Supabase RPC + Resend email pipeline)
+- [x] Custom Resend sender domain verified (feedback emails come from `feedback@boges2birds.com`)
 
 ### Next Steps
 
-- [ ] Verify a custom Resend sender domain so feedback emails come from `feedback@boges2birds.com` (currently `onboarding@resend.dev`, account-only delivery)
 - [ ] Configure Sentry source map upload for production builds
 - [ ] RevenueCat dashboard setup (create products in App Store Connect, add real API key)
 - [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)

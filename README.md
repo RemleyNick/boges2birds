@@ -246,14 +246,19 @@ supabase/
 - [x] Apple privacy manifest
 - [x] In-app feedback form (Supabase RPC + Resend email pipeline)
 - [x] Custom Resend sender domain verified (feedback emails come from `feedback@boges2birds.com`)
+- [x] Sentry source map upload configured (`organization` + `project` passed to the `@sentry/react-native` Expo plugin in `app.json` so prebuild generates `sentry.properties` correctly on EAS; `SENTRY_AUTH_TOKEN` stored as a sensitive EAS env var on the production environment)
 
-### Next Steps
+### Next Steps (in order)
 
-- [ ] Configure Sentry source map upload for production builds
-- [ ] RevenueCat dashboard setup (create products in App Store Connect, add real API key)
-- [ ] OpenAI API key (add key to `.env` for AI-generated practice plan summaries)
-- [ ] Production build + TestFlight (`eas build --profile production` -> `eas submit`)
-- [ ] App Store submission
+1. [ ] **Clean up duplicate `EXPO_PUBLIC_RC_APPLE_API_KEY` in EAS production env** -- the variable is currently listed twice (once plaintext, once as a secret). Delete the plaintext copy with `eas env:delete --environment production --variable-name EXPO_PUBLIC_RC_APPLE_API_KEY` (pick the plaintext one when prompted), then verify with `eas env:list --environment production`.
+2. [ ] **OpenAI API key** -- add the real key to `.env` under `EXPO_PUBLIC_OPENAI_API_KEY` (and to EAS as a sensitive env var) so LLM weekly summaries replace the template fallback.
+3. [ ] **RevenueCat / App Store Connect dashboard setup** -- create the subscription product(s) in App Store Connect, map them to the `premium` entitlement in the RevenueCat dashboard, confirm the offering ID the paywall uses.
+4. [ ] **First production EAS build** -- `eas build --platform ios --profile production`. Watch the bundle step logs for the sentry-cli source map upload (look for "Uploading source maps" or "Source map upload completed"). A failed upload won't fail the build; fix and ship in build 2 if needed.
+5. [ ] **TestFlight + sandbox subscription test** -- install on a physical device via TestFlight, run onboarding, trigger the paywall, complete a sandbox purchase, confirm the transaction shows up in the RevenueCat dashboard.
+6. [ ] **App Store submission** -- `eas submit --platform ios --profile production`.
+
+### Post-launch backlog
+
 - [ ] Round-over-round progress tracking and visualizations
 - [ ] Block-to-block skill trend analysis
 - [ ] Push notifications for practice reminders

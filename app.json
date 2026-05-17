@@ -59,7 +59,13 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "organization": "self-employed-s6",
+          "project": "boges2birds"
+        }
+      ]
     ],
     "extra": {
       "router": {},

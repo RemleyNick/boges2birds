@@ -2,7 +2,7 @@
 
 **Your personal golf training system.**
 
-A structured golf practice app for players working to Break 100, 90, or 80. Users enroll in a program, configure their practice schedule, complete structured 4-week training blocks built around their weakest skills, log round stats, and get AI-formatted weekly practice plans.
+A structured golf practice app for players working to Break 100, 90, or 80. Users enroll in a program, configure their practice schedule, complete structured 4-week training blocks built around their weakest skills, and log round stats to track their progress.
 
 ---
 
@@ -13,7 +13,6 @@ A structured golf practice app for players working to Break 100, 90, or 80. User
 - **Session structure modes** -- Focused (venue-based grouping), Mixed (all skills every session), or Auto (venue-based with priority ordering)
 - **Skill priority engine** -- analyzes round stats (fairways, GIR, putts, penalties) to rank what to work on most
 - **Day-by-day practice plans** -- sessions labeled by activity ("Day 1 -- Driving Range", "Day 2 -- Short Game + Putting")
-- **AI-formatted summaries** -- OpenAI generates friendly weekly summaries from the structured block data
 - **Round logging** -- track scores, fairways hit, GIR, putts, and penalties over time
 - **Drill library** -- curated practice drills mapped to skill areas and session types
 - **Offline-first** -- everything works without a connection; syncs to the cloud in the background
@@ -60,7 +59,6 @@ Time within each session is distributed proportionally by priority score -- weak
 | Local DB | expo-sqlite + Drizzle ORM |
 | Cloud | Supabase (Postgres + Auth + RLS) |
 | Subscriptions | RevenueCat SDK v8 |
-| LLM | OpenAI gpt-4o-mini |
 | Crash Reporting | Sentry |
 | Transactional Email | Resend (feedback notifications) |
 | Language | TypeScript v5 |
@@ -125,7 +123,6 @@ cp .env.example .env
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 EXPO_PUBLIC_RC_APPLE_API_KEY=
-EXPO_PUBLIC_OPENAI_API_KEY=
 EXPO_PUBLIC_SENTRY_DSN=
 ```
 
@@ -197,7 +194,6 @@ src/
   repositories/                      -- CRUD layer per table
   services/
     auth.ts                          -- Supabase Auth wrapper
-    llm.ts                           -- OpenAI prompt templates + parsing
     sync.ts                          -- SQLite -> Supabase background sync
     subscriptions.ts                 -- RevenueCat wrapper
     feedback.ts                      -- submit_feedback RPC client + diagnostics gathering
@@ -242,20 +238,18 @@ supabase/
 - [x] UI/styling polish
 - [x] EAS build config + app identifiers
 - [x] Error boundary + crash reporting (Sentry)
-- [x] LLM integration (OpenAI gpt-4o-mini)
 - [x] Apple privacy manifest
 - [x] In-app feedback form (Supabase RPC + Resend email pipeline)
 - [x] Custom Resend sender domain verified (feedback emails come from `feedback@boges2birds.com`)
 - [x] Sentry source map upload configured (`organization` + `project` passed to the `@sentry/react-native` Expo plugin in `app.json` so prebuild generates `sentry.properties` correctly on EAS; `SENTRY_AUTH_TOKEN` stored as a sensitive EAS env var on the production environment)
+- [x] EAS production env cleaned up (removed duplicate plaintext `EXPO_PUBLIC_RC_APPLE_API_KEY`; only the secret copy remains)
+- [x] RevenueCat / App Store Connect dashboard setup (subscription products created in App Store Connect, attached to the `premium` entitlement in RevenueCat, current offering published with paywall verified working in-app)
 
 ### Next Steps (in order)
 
-1. [ ] **Clean up duplicate `EXPO_PUBLIC_RC_APPLE_API_KEY` in EAS production env** -- the variable is currently listed twice (once plaintext, once as a secret). Delete the plaintext copy with `eas env:delete --environment production --variable-name EXPO_PUBLIC_RC_APPLE_API_KEY` (pick the plaintext one when prompted), then verify with `eas env:list --environment production`.
-2. [ ] **OpenAI API key** -- add the real key to `.env` under `EXPO_PUBLIC_OPENAI_API_KEY` (and to EAS as a sensitive env var) so LLM weekly summaries replace the template fallback.
-3. [ ] **RevenueCat / App Store Connect dashboard setup** -- create the subscription product(s) in App Store Connect, map them to the `premium` entitlement in the RevenueCat dashboard, confirm the offering ID the paywall uses.
-4. [ ] **First production EAS build** -- `eas build --platform ios --profile production`. Watch the bundle step logs for the sentry-cli source map upload (look for "Uploading source maps" or "Source map upload completed"). A failed upload won't fail the build; fix and ship in build 2 if needed.
-5. [ ] **TestFlight + sandbox subscription test** -- install on a physical device via TestFlight, run onboarding, trigger the paywall, complete a sandbox purchase, confirm the transaction shows up in the RevenueCat dashboard.
-6. [ ] **App Store submission** -- `eas submit --platform ios --profile production`.
+1. [ ] **First production EAS build** -- `eas build --platform ios --profile production`. Watch the bundle step logs for the sentry-cli source map upload (look for "Uploading source maps" or "Source map upload completed"). A failed upload won't fail the build; fix and ship in build 2 if needed.
+2. [ ] **TestFlight + sandbox subscription test** -- install on a physical device via TestFlight, run onboarding, trigger the paywall, complete a sandbox purchase, confirm the transaction shows up in the RevenueCat dashboard.
+3. [ ] **App Store submission** -- `eas submit --platform ios --profile production`.
 
 ### Post-launch backlog
 

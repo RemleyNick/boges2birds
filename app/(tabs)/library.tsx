@@ -272,20 +272,23 @@ const styles = StyleSheet.create({
   },
   toggleRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  togglePill: {
     backgroundColor: colors.cardBg,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    padding: 4,
+    marginBottom: 16,
+  },
+  togglePill: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   togglePillActive: {
     backgroundColor: colors.accent,
   },
   toggleText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textMuted,
   },

@@ -14,7 +14,7 @@ A structured golf practice app for players working to Break 100, 90, or 80. User
 - **Skill priority engine** -- analyzes round stats (fairways, GIR, putts, penalties) to rank what to work on most
 - **Day-by-day practice plans** -- sessions labeled by activity ("Day 1 -- Driving Range", "Day 2 -- Short Game + Putting")
 - **Round logging** -- track scores, fairways hit, GIR, putts, and penalties over time
-- **Drill library** -- curated practice drills mapped to skill areas and session types
+- **Library** -- segmented browser for curated practice drills and golf articles, each filterable by category
 - **Offline-first** -- everything works without a connection; syncs to the cloud in the background
 - **Freemium with paywall** -- Week 1 preview for free; premium unlocks full training blocks
 - **In-app feedback** -- users report bugs or suggest improvements from Profile; submissions email the developer via Resend
@@ -176,7 +176,7 @@ app/
   (tabs)/
     index.tsx                        -- Home (weekly session cards: "Day 1 -- Driving Range")
     log-round.tsx                    -- Round logging form (9/18 holes, stats)
-    library.tsx                      -- Drill library with skill-area filters
+    library.tsx                      -- Drills + articles browser (segmented control, category filters)
     profile.tsx                      -- Identity, program, skill ratings, session config, round stats
 
 src/
@@ -230,7 +230,7 @@ supabase/
 - [x] Home screen (day-by-day session cards with venue labels)
 - [x] Practice session flow (drill checklist, session completion)
 - [x] Round logging (form with input validation)
-- [x] Drill library (skill-area filters, expandable cards)
+- [x] Library (segmented drills + articles browser with category filters, expandable cards)
 - [x] Profile (identity, program, skill ratings, session config, round stats)
 - [x] Auth (sign-up/sign-in, guest migration)
 - [x] RevenueCat subscription + paywall

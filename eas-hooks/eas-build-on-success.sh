@@ -44,14 +44,20 @@ while IFS= read -r map; do
   # temp dir.
   bundle=$(find . -name 'main.jsbundle' -not -path '*/node_modules/*' -not -empty -print 2>/dev/null | head -1)
 
+  # `sentry-expo-upload-sourcemaps`' isAsset filter accepts .map/.js/.hbc but
+  # NOT .jsbundle, so naming the bundle main.jsbundle silently drops it from
+  # the upload (this is why builds 7-10 had a 0-byte ~/main.jsbundle in Sentry
+  # and `symbolicated_in_app: false` on every event). Hermes bytecode is what
+  # ships in the .ipa anyway, so we name the temp-dir copies .hbc/.hbc.map.
+  # Same stem on both files keeps the helper grouping them as a pair.
   upload_dir=$(mktemp -d)
-  cp "$map" "$upload_dir/main.jsbundle.map"
+  cp "$map" "$upload_dir/main.hbc.map"
   if [ -n "$bundle" ]; then
-    cp "$bundle" "$upload_dir/main.jsbundle"
+    cp "$bundle" "$upload_dir/main.hbc"
     bundle_size=$(wc -c < "$bundle" | tr -d ' ')
-    echo "[sentry] Pairing $bundle ($bundle_size B) with $map"
+    echo "[sentry] Pairing $bundle ($bundle_size B) with $map (renamed to main.hbc / main.hbc.map for helper)"
   else
-    echo "[sentry] No non-empty main.jsbundle found; uploading sourcemap alone (Sentry symbolicates via debug ID)."
+    echo "[sentry] No non-empty main.jsbundle found; uploading sourcemap alone."
   fi
 
   if npx --no-install sentry-expo-upload-sourcemaps "$upload_dir"; then

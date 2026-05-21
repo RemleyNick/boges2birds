@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import Constants from 'expo-constants'
+import * as Sentry from '@sentry/react-native'
 
 import { Button, Card, Pill } from '@/components/ui'
 import { colors } from '@/constants/colors'
@@ -76,6 +78,23 @@ export default function ProfileScreen() {
   const [editSessions, setEditSessions] = useState<SessionsPerWeek>(3)
   const [editDuration, setEditDuration] = useState<SessionDuration>(45)
   const [editStructure, setEditStructure] = useState<SessionStructure>('auto')
+
+  // Hidden Sentry smoke test: 7 taps on the version label within 2s fires a
+  // test error so we can confirm the uploaded source map symbolicates
+  // production stack traces. Intentionally undocumented in the UI.
+  const versionTapTimes = useRef<number[]>([])
+  function onVersionTap() {
+    const now = Date.now()
+    versionTapTimes.current = [
+      ...versionTapTimes.current.filter((t) => now - t < 2000),
+      now,
+    ]
+    if (versionTapTimes.current.length >= 7) {
+      versionTapTimes.current = []
+      Sentry.captureException(new Error('Sentry smoke test from Profile'))
+      Alert.alert('Sentry test', 'Captured a test error. Check the Sentry dashboard.')
+    }
+  }
 
   const roundStats = useMemo(() => {
     if (roundLogs.length === 0) return null
@@ -372,6 +391,17 @@ export default function ProfileScreen() {
             <Text style={styles.signOutText}>Sign Out</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          onPress={onVersionTap}
+          activeOpacity={1}
+          style={styles.versionContainer}
+        >
+          <Text style={styles.versionLabel}>
+            v{Constants.expoConfig?.version ?? '1.0.0'}
+            {Constants.nativeBuildVersion ? ` (${Constants.nativeBuildVersion})` : ''}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   )
@@ -592,5 +622,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     gap: 12,
+  },
+
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  versionLabel: {
+    fontSize: 11,
+    color: colors.textSubtle,
   },
 })

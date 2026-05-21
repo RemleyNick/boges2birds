@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "test": "jest",
     "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "eas-build-on-success": "bash eas-hooks/eas-build-on-success.sh"
   },
   "dependencies": {
     "@expo-google-fonts/dancing-script": "^0.4.2",

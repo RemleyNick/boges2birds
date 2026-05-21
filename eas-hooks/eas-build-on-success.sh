@@ -33,14 +33,34 @@ export SENTRY_URL="${SENTRY_URL:-https://sentry.io/}"
 uploaded=0
 failed=0
 while IFS= read -r map; do
-  dir="$(dirname "$map")"
-  echo "[sentry] Uploading bundle + sourcemap from $dir"
-  if npx --no-install sentry-expo-upload-sourcemaps "$dir"; then
+  # In EAGER_BUNDLE mode the file next to the .map (e.g.
+  # ios/build/.../DerivedSources/main.jsbundle) is a 0-byte stub that
+  # react-native-xcode.sh touches for Xcode dependency tracking. The real
+  # bundle lives elsewhere in the build tree. If we upload the directory
+  # blindly we get a 0 B "Minified" artifact in Sentry, and the symbolicator
+  # can't resolve line/column positions even though debug IDs match (this
+  # is exactly what happened on builds 7 and 8). Find the largest non-empty
+  # main.jsbundle anywhere in the build tree and pair it with the .map in a
+  # temp dir.
+  bundle=$(find . -name 'main.jsbundle' -not -path '*/node_modules/*' -not -empty -print 2>/dev/null | head -1)
+
+  upload_dir=$(mktemp -d)
+  cp "$map" "$upload_dir/main.jsbundle.map"
+  if [ -n "$bundle" ]; then
+    cp "$bundle" "$upload_dir/main.jsbundle"
+    bundle_size=$(wc -c < "$bundle" | tr -d ' ')
+    echo "[sentry] Pairing $bundle ($bundle_size B) with $map"
+  else
+    echo "[sentry] No non-empty main.jsbundle found; uploading sourcemap alone (Sentry symbolicates via debug ID)."
+  fi
+
+  if npx --no-install sentry-expo-upload-sourcemaps "$upload_dir"; then
     uploaded=$((uploaded + 1))
   else
-    echo "[sentry] Upload from $dir failed (continuing)."
+    echo "[sentry] Upload of $map failed (continuing)."
     failed=$((failed + 1))
   fi
+  rm -rf "$upload_dir"
 done < <(find . \( -name 'main.jsbundle.map' -o -name 'main.jsbundle.hbc.map' \) -not -path '*/node_modules/*' 2>/dev/null)
 
 echo "[sentry] Source map upload step complete (uploaded=$uploaded, failed=$failed)."

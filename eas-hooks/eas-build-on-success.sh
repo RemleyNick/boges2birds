@@ -22,6 +22,14 @@ if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
   exit 0
 fi
 
+# `sentry-expo-upload-sourcemaps` falls back to reading org/project from the
+# `@sentry/react-native/expo` plugin entry in app config — but we use the
+# bare `@sentry/react-native` plugin name, so that lookup fails. Pass them
+# in via env to skip the lookup. Keep these in sync with app.json.
+export SENTRY_ORG="${SENTRY_ORG:-self-employed-s6}"
+export SENTRY_PROJECT="${SENTRY_PROJECT:-boges2birds}"
+export SENTRY_URL="${SENTRY_URL:-https://sentry.io/}"
+
 uploaded=0
 failed=0
 while IFS= read -r map; do

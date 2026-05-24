@@ -252,6 +252,7 @@ supabase/
 ### Next Steps (in order)
 
 1. [ ] **App Store release of build 11** -- `eas submit` has already uploaded build 11 (`ec55f39c-1202-494a-9be7-356b11cd0865`) to App Store Connect, so the binary is available in TestFlight. To release to the App Store: in https://appstoreconnect.apple.com → boges2birds → "App Store" tab → create iOS app version `1.0.0` → attach build 11 → fill in store metadata (description, screenshots for required device sizes, keywords, support URL, marketing URL, privacy policy URL, app privacy details, age rating, pricing) → submit for review. Apple review typically takes 24-48 hours.
+2. [ ] **Apple review + initial rollout** -- watch App Store Connect for review status, release on approval (manual or phased), monitor Sentry / RevenueCat / Supabase for the first day's crashes, subscription events, and sync errors.
 
 ### Post-launch backlog
 

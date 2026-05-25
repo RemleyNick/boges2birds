@@ -1,7 +1,6 @@
 import type { SessionConfig, SkillPriority } from '@/types'
 import { DRILL_SEEDS } from '../drillSeeds'
 import {
-  buildTemplateSummary,
   distributeTime,
   generateBlockStructure,
 } from '../blockGenerator'
@@ -156,11 +155,6 @@ describe('generateBlockStructure', () => {
     expect(block.blockNumber).toBe(3)
   })
 
-  it('starts with llmSummary = null', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
-    expect(block.llmSummary).toBeNull()
-  })
-
   it('includes skill priorities in output', () => {
     const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
     expect(block.skillPriorities).toBe(MOCK_PRIORITIES)
@@ -272,29 +266,5 @@ describe('generateBlockStructure', () => {
       .filter((id) => block1DrillIds.has(id)).length
 
     expect(overlapWith).toBeLessThanOrEqual(overlapWithout)
-  })
-})
-
-describe('buildTemplateSummary', () => {
-  it('returns a non-empty string', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
-    const summary = buildTemplateSummary(block)
-    expect(typeof summary).toBe('string')
-    expect(summary.length).toBeGreaterThan(0)
-  })
-
-  it('mentions all 4 weeks', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
-    const summary = buildTemplateSummary(block)
-    expect(summary).toContain('Week 1')
-    expect(summary).toContain('Week 2')
-    expect(summary).toContain('Week 3')
-    expect(summary).toContain('Week 4')
-  })
-
-  it('reflects actual session count per week', () => {
-    const block = generateBlockStructure(MOCK_PRIORITIES, CONFIG_2x60, 'break100', 1, DRILL_SEEDS)
-    const summary = buildTemplateSummary(block)
-    expect(summary).toContain('2 sessions')
   })
 })

@@ -59,7 +59,6 @@ export interface TrainingBlock {
   blockNumber: number
   skillPriorities: SkillPriority[]
   sessions: Session[]
-  llmSummary: string | null
 }
 
 export interface Drill {

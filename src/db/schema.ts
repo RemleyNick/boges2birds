@@ -99,7 +99,6 @@ export const trainingBlocks = sqliteTable('training_blocks', {
   // Stored as JSON: SessionConfig
   sessionConfig: text('session_config', { mode: 'json' })
     .$type<SessionConfig>(),
-  llmSummary: text('llm_summary'),
   // 'active' | 'completed'
   status: text('status').notNull().default('active'),
   ...timestamps,

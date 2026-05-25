@@ -26,7 +26,6 @@ Golf performance training app. Users enroll in a Break 100/90/80 program, comple
 | Local DB | expo-sqlite + Drizzle ORM |
 | Cloud DB/Auth | Supabase (Postgres + Auth + RLS) |
 | Subscriptions | RevenueCat SDK v8 |
-| LLM | OpenAI gpt-4o-mini |
 | Animations | Reanimated v3 |
 | Language | TypeScript v5 |
 
@@ -90,7 +89,6 @@ boges2birds/
 │   │   └── migrations/
 │   ├── repositories/                 ← CRUD layer per table
 │   ├── services/
-│   │   ├── llm.ts                    ← OpenAI prompt templates + parsing
 │   │   ├── sync.ts                   ← SQLite → Supabase background sync
 │   │   ├── auth.ts                   ← Supabase Auth wrapper
 │   │   └── subscriptions.ts          ← RevenueCat wrapper
@@ -132,7 +130,7 @@ STATE            Zustand v5 (UI) | TanStack Query v5 (DB-sourced data)
 BUSINESS LOGIC   src/engine/ — pure TypeScript, zero React imports
 DATA ACCESS      Drizzle ORM + expo-sqlite | Supabase client
 PERSISTENCE      SQLite (local-first) ←→ Supabase Postgres (sync)
-EXTERNAL         OpenAI gpt-4o-mini | RevenueCat | Supabase Auth
+EXTERNAL         RevenueCat | Supabase Auth
 ```
 
 **Hard rules:**
@@ -152,7 +150,7 @@ All tables have `id UUID PK`, `created_at`, `updated_at`. All user-owned tables 
 | `skill_assessments` | user_id, avg_score, handicap_index, tee_shot_rating, iron_rating, short_game_rating, putting_rating, course_mgmt_rating, weekly_time_available (deprecated), sessions_per_week, session_duration, session_structure |
 | `programs` | slug ('break100'\|'break90'\|'break80'), display_name, target_avg_score |
 | `user_programs` | user_id, program_id, status ('active'\|'completed'\|'paused'), enrolled_at |
-| `training_blocks` | user_id, block_number, week_start/end_date, skill_priorities (JSON), session_config (JSON), llm_summary, status |
+| `training_blocks` | user_id, block_number, week_start/end_date, skill_priorities (JSON), session_config (JSON), status |
 | `sessions` | training_block_id, week_number, session_type, primary_skill, skills (JSON SkillArea[]), scheduled_date, duration_minutes, status |
 | `drills` | name, skill_area, session_type, difficulty, duration_minutes, program_slug, instructions, is_system |
 | `session_drills` | session_id, drill_id, order_index, completed |
@@ -224,13 +222,6 @@ Focused/Auto groupings for each session count:
 | 3 | Peak |
 | 4 | Consolidate |
 
-### LLM integration
-- Engine generates structured JSON → sent to gpt-4o-mini for friendly copy only
-- LLM writes words, never makes decisions
-- Call is async/non-blocking — show block immediately, update `llm_summary` when resolved
-- Always have a template fallback if LLM fails
-- System prompt: *"You are a golf coach. Format the practice plan below into friendly weekly summaries (3–5 sentences each). Do not invent drills or change the structure."*
-
 ---
 
 ## Subscription Architecture
@@ -265,7 +256,6 @@ All core features are implemented:
 
 ### Remaining for launch
 - RevenueCat dashboard setup + real API key
-- OpenAI API key for LLM summaries
 - Sentry source map upload configuration
 - Production EAS build + TestFlight + App Store submission
 
@@ -275,7 +265,6 @@ All core features are implemented:
 
 | Risk | Mitigation |
 |---|---|
-| LLM in critical path | Generate block sync, call LLM async, always have template fallback |
 | Schema drift (SQLite vs Supabase) | Single `schema.ts` source of truth; `supabase db push` in deploy workflow |
 | Over-engineering the engine | `thresholds.ts` is a flat constants file only; add debug screen for raw scores |
 | Subscription gate patchwork | One `useEntitlement()` hook — never scatter `if (isPremium)` |

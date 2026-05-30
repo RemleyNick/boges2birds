@@ -22,6 +22,13 @@
       "when": 1778659200000,
       "tag": "0002_drill_equipment",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779408000000,
+      "tag": "0003_drop_llm_summary",
+      "breakpoints": true
     }
   ]
 }

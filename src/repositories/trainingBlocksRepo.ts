@@ -41,7 +41,6 @@ export async function saveTrainingBlock(
     weekEndDate: endDate,
     skillPriorities: block.skillPriorities,
     sessionConfig: sessionConfig ?? null,
-    llmSummary: block.llmSummary,
     status: 'active',
     createdAt: now,
     updatedAt: now,

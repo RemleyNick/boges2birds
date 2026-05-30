@@ -135,38 +135,5 @@ export function generateBlockStructure(
     blockNumber,
     skillPriorities: priorities,
     sessions,
-    llmSummary: null,
   }
 }
-
-/**
- * Template fallback summary — always available, requires no network.
- * Produces friendly plain-text weekly summaries based on block structure.
- */
-export function buildTemplateSummary(block: TrainingBlock): string {
-  const topSkill = block.skillPriorities[0]?.skill ?? 'putting'
-  const secondSkill = block.skillPriorities[1]?.skill ?? 'shortGame'
-
-  const weekSummaries = ([1, 2, 3, 4] as const).map((week) => {
-    const weekSessions = block.sessions.filter((s) => s.weekNumber === week)
-    const totalMin = weekSessions.reduce((sum, s) => sum + s.durationMinutes, 0)
-    const themes: Record<1 | 2 | 3 | 4, string> = {
-      1: 'Foundation',
-      2: 'Build',
-      3: 'Peak',
-      4: 'Consolidate',
-    }
-    return `Week ${week} (${themes[week]}): ${weekSessions.length} sessions, ${totalMin} min total.`
-  })
-
-  return (
-    `This block prioritises ${topSkill} and ${secondSkill} — your biggest opportunities for improvement.\n\n` +
-    weekSummaries.join('\n')
-  )
-}
-
-/**
- * Re-export the LLM enrichment from the service layer.
- * Falls back to template summary if the API key is missing or the call fails.
- */
-export { enrichWithLLMSummary } from '@/services/llm'

@@ -7,11 +7,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
 
-import { db } from '@/db/client'
-import { trainingBlocks } from '@/db/schema'
 import { colors } from '@/constants/colors'
 import { DRILL_SEEDS } from '@/engine/drillSeeds'
-import { generateBlockStructure, enrichWithLLMSummary } from '@/engine/blockGenerator'
+import { generateBlockStructure } from '@/engine/blockGenerator'
 import { computeSkillPriorities } from '@/engine/skillPriorityEngine'
 import { saveSkillAssessment } from '@/repositories/skillAssessmentsRepo'
 import { enrollInProgram } from '@/repositories/userProgramsRepo'
@@ -25,7 +23,6 @@ import { usePaywall } from '@/hooks/usePaywall'
 import { useOnboardingStore } from '@/store/onboardingStore'
 import { useUserStore } from '@/store/userStore'
 import type { ProgramSlug, SessionConfig, SkillRatings } from '@/types'
-import { eq } from 'drizzle-orm'
 
 export default function GeneratingScreen() {
   const router = useRouter()
@@ -101,16 +98,7 @@ export default function GeneratingScreen() {
         await saveSkillAssessment(userId, skillRatings as SkillRatings, sessionConfig)
         await enrollInProgram(userId, blockProgram)
       }
-      const blockId = await saveTrainingBlock(userId, block, sessionConfig)
-
-      // Fire-and-forget LLM enrichment
-      enrichWithLLMSummary(block)
-        .then((summary) =>
-          db.update(trainingBlocks)
-            .set({ llmSummary: summary, updatedAt: new Date() })
-            .where(eq(trainingBlocks.id, blockId))
-        )
-        .catch(() => {}) // silent fail; template summary is already saved
+      await saveTrainingBlock(userId, block, sessionConfig)
 
       queryClient.invalidateQueries({ queryKey: ['active-block'] })
       queryClient.invalidateQueries({ queryKey: ['latest-block'] })

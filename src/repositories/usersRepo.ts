@@ -191,3 +191,8 @@ export async function migrateGuestToAuth(
   // Clear guest key from AsyncStorage
   await AsyncStorage.removeItem(GUEST_KEY)
 }
+
+export async function deleteLocalUserData(userId: string): Promise<void> {
+  await db.delete(users).where(eq(users.id, userId))
+  await AsyncStorage.removeItem(GUEST_KEY)
+}

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,13 +15,16 @@ import { useRouter } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import Constants from 'expo-constants'
 import * as Sentry from '@sentry/react-native'
+import { useQueryClient } from '@tanstack/react-query'
 
 import { Button, Card, Pill } from '@/components/ui'
 import { colors } from '@/constants/colors'
+import { PRIVACY_POLICY_URL, TERMS_URL } from '@/constants/legal'
 import { useEntitlement } from '@/hooks/useEntitlement'
 import { usePaywall } from '@/hooks/usePaywall'
-import { signOut } from '@/services/auth'
+import { deleteAccount, signOut } from '@/services/auth'
 import { restorePurchases } from '@/services/subscriptions'
+import { deleteLocalUserData } from '@/repositories/usersRepo'
 import { useUserStore } from '@/store/userStore'
 import {
   useUser,
@@ -58,6 +62,7 @@ const STRUCTURE_LABELS: Record<SessionStructure, string> = {
 
 export default function ProfileScreen() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const userId = useUserStore((s) => s.userId)
   const isGuest = useUserStore((s) => s.isGuest)
 
@@ -138,6 +143,31 @@ export default function ProfileScreen() {
     setEditingConfig(false)
   }
 
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes all your data and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (userId) await deleteLocalUserData(userId)
+              await deleteAccount()
+              useUserStore.setState({ userId: null, isGuest: true, isAuthReady: false })
+              queryClient.clear()
+              router.replace('/')
+            } catch {
+              Alert.alert('Error', 'Failed to delete account. Please try again.')
+            }
+          },
+        },
+      ],
+    )
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.root}>
@@ -212,20 +242,29 @@ export default function ProfileScreen() {
           {!isPremium && (
             <View style={styles.upgradeRow}>
               <Button title="Upgrade to Premium" onPress={() => showPaywall()} />
-              <TouchableOpacity
-                style={styles.restoreLink}
-                onPress={async () => {
-                  const restored = await restorePurchases()
-                  if (!restored) {
-                    Alert.alert('No purchases found', 'We couldn\'t find an active subscription to restore.')
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.restoreLinkText}>Restore Purchases</Text>
-              </TouchableOpacity>
             </View>
           )}
+          <TouchableOpacity
+            style={styles.restoreLink}
+            onPress={async () => {
+              const restored = await restorePurchases()
+              if (!restored) {
+                Alert.alert('No purchases found', 'We couldn\'t find an active subscription to restore.')
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.restoreLinkText}>Restore Purchases</Text>
+          </TouchableOpacity>
+          <View style={styles.legalRow}>
+            <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)} activeOpacity={0.7}>
+              <Text style={styles.legalLinkText}>Terms of Use</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSep}> · </Text>
+            <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} activeOpacity={0.7}>
+              <Text style={styles.legalLinkText}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
         </Card>
 
         {/* ─── Program Card ───────────────────────────────── */}
@@ -380,16 +419,25 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.accent} />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            style={styles.accountRow}
-            onPress={async () => {
-              await signOut()
-              router.replace('/')
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={async () => {
+                await signOut()
+                router.replace('/')
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={handleDeleteAccount}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.deleteAccountText}>Delete Account</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <TouchableOpacity
@@ -608,11 +656,32 @@ const styles = StyleSheet.create({
   },
   restoreLink: {
     paddingVertical: 4,
+    marginTop: 10,
+    alignSelf: 'flex-start',
   },
   restoreLinkText: {
     fontSize: 13,
     color: colors.textSubtle,
     textDecorationLine: 'underline',
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: colors.textSubtle,
+    textDecorationLine: 'underline',
+  },
+  legalSep: {
+    fontSize: 12,
+    color: colors.textSubtle,
+  },
+  deleteAccountText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.danger,
   },
 
   // Error state

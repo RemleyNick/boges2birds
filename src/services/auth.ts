@@ -62,3 +62,11 @@ export function onAuthStateChange(
   }
   return client.auth.onAuthStateChange(callback as any)
 }
+
+export async function deleteAccount(): Promise<void> {
+  const client = getClient()
+  if (!client) throw new Error('Supabase is not configured.')
+  const { error } = await client.rpc('delete_my_account')
+  if (error) throw error
+  await client.auth.signOut()
+}
